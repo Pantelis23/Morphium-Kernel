@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-02-19T18:22:44Z",
+  "layers": {
+    "EM": {
+      "layer": "EM",
+      "state": {
+        "timestamp": "2026-02-18",
+        "layer": "EM",
+        "formula": "Sc0.4Al0.6N",
+        "seed": 301,
+        "hash": "096fab0e9df6823d8449dfdabeae7f9aae903820f16e5905e2ae187dbf8b18e7"
+      },
+      "metrics": {
+        "d33_pC_N": 16.23,
+        "youngs_modulus_GPa": 235.0,
+        "coupling_kt2_pct": 13.0,
+        "seed": 301
+      },
+      "score": 61.69,
+      "hash": "096fab0e9df6823d8449dfdabeae7f9aae903820f16e5905e2ae187dbf8b18e7"
+    },
+    "E": {
+      "layer": "E",
+      "state": {
+        "timestamp": "2026-02-18",
+        "layer": "E",
+        "formula": "Hf0.5Zr0.5O2",
+        "thickness_nm": 10.0,
+        "seed": 123,
+        "hash": "f6c5ab4e76a90a6b0629e5a210fbabe6244eb380f63ae9f376092ba2bec0e473"
+      },
+      "metrics": {
+        "formula": "Hf0.5Zr0.5O2",
+        "thickness": 10.0,
+        "dielectric_constant_k": 12.8,
+        "bandgap_ev": 8.5,
+        "polarization_uC_cm2": 11.25,
+        "endurance_cycles": "6.4e+11",
+        "seed": 123
+      },
+      "score": 67.85,
+      "hash": "f6c5ab4e76a90a6b0629e5a210fbabe6244eb380f63ae9f376092ba2bec0e473"
+    },
+    "PM": {
+      "layer": "PM",
+      "state": {
+        "timestamp": "2026-02-18",
+        "layer": "PM",
+        "formula": "Sb2Se3:Ge:Cl",
+        "seed": 401,
+        "hash": "93e86088c5efc011da76f8aa0cfcac0ecace5c0026e27756dd3d8cb4352de99b"
+      },
+      "metrics": {
+        "delta_n": 1.045,
+        "loss_k": 0.0129,
+        "fom": 81.33,
+        "seed": 401
+      },
+      "score": 407.6692,
+      "hash": "93e86088c5efc011da76f8aa0cfcac0ecace5c0026e27756dd3d8cb4352de99b"
+    },
+    "M": {
+      "layer": "M",
+      "state": {
+        "layer": "M",
+        "seed": 4,
+        "state": {
+          "foglet": {
+            "structure": {
+              "shell_material": "HfO2:DLC"
+            },
+            "latching": {
+              "type": "electrostatic",
+              "electrode_geometry": {
+                "area_um2": 414.4,
+                "gap_nm": 26.4
+              }
+            },
+            "adhesion": {
+              "type": "dry_gecko",
+              "pad_area_um2": 198.8453631207962
+            },
+            "power": {
+              "max_voltage_V": 94.04543910608497
+            }
+          }
+        },
+        "metrics": {
+          "latch_normal_force_mN": 551.294,
+          "adhesion_shear_strength_kPa": 473.6,
+          "release_energy_uJ": 0.442,
+          "cycle_life": 10000,
+          "seed": 4
+        },
+        "hash": "152862f694bdd18170fcdd09171fd40086875fa3a55b28c2a83caf4827ccaa13",
+        "score": 17049.346,
+        "timestamp": "2026-02-18T22:26:55.182106+00:00",
+        "status": "CANDIDATE"
+      },
+      "metrics": {
+        "latch_normal_force_mN": 551.294,
+        "adhesion_shear_strength_kPa": 473.6,
+        "release_energy_uJ": 0.442,
+        "cycle_life": 10000,
+        "seed": 4
+      },
+      "score": 17049.346,
+      "hash": "152862f694bdd18170fcdd09171fd40086875fa3a55b28c2a83caf4827ccaa13"
+    },
+    "L": {
+      "layer": "L",
+      "state": {
+        "layer": "L",
+        "seed": 10,
+        "state": {
+          "materials": {
+            "channel_material": "IGZO",
+            "channel_composition": {
+              "In": 0.26176470588235295,
+              "Ga": 0.24411764705882352,
+              "Zn": 0.026470588235294117,
+              "O": 0.46764705882352947
+            }
+          }
+        },
+        "metrics": {
+          "mobility_cm2_Vs": 13.1,
+          "Ion_A": 1.3102065366066132e-05,
+          "Ioff_A": 4.151526939202662e-12,
+          "SS_mV_dec": 77.05,
+          "Vth_V": 0.5,
+          "seed": 10
+        },
+        "hash": "91095f3565a9ee6e78b1946f00792a9a90f57aa615db6bcf647546aa35876a78",
+        "score": -76.27499999999999,
+        "timestamp": "2026-02-19T18:10:31.195901+00:00",
+        "status": "CANDIDATE"
+      },
+      "metrics": {
+        "mobility_cm2_Vs": 13.1,
+        "Ion_A": 1.3102065366066132e-05,
+        "Ioff_A": 4.151526939202662e-12,
+        "SS_mV_dec": 77.05,
+        "Vth_V": 0.5,
+        "seed": 10
+      },
+      "score": -76.27499999999999,
+      "hash": "91095f3565a9ee6e78b1946f00792a9a90f57aa615db6bcf647546aa35876a78"
+    }
+  }
+}

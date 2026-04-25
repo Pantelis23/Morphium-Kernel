@@ -1,0 +1,20 @@
+# Morphium-EM (Actuator) Contract
+layer: EM
+version: 1.0
+
+state:
+  formula: { type: "string" }
+
+metrics:
+  - name: d33_pC_N
+    direction: maximize
+    target: 20.0
+    weight: 3.0
+  - name: coupling_kt2_pct
+    direction: maximize
+    target: 15.0
+    weight: 1.0
+
+promotion:
+  thresholds:
+    d33_pC_N: { min: 10.0 }

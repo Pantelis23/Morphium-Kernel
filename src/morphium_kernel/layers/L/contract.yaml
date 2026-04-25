@@ -1,0 +1,156 @@
+# Morphium-L (Oxide TFT Logic) Contract
+layer:
+  id: "L"
+  name: "Morphium-L"
+  domain: "oxide_tft_logic"
+  objective: "Printable thin-film transistor logic to replace silicon MOSFETs on glass/plastic."
+  provenance:
+    paper_ref: "Future Directions 3.1"
+  dependencies:
+    optional_layers: ["E"]   # e.g., HZO gate dielectric / ferroelectric assist (optional)
+  candidates:
+    channel_material:
+      allowed: ["IGZO", "ITZO"]
+    gate_dielectric:
+      allowed: ["HfO2", "Al2O3", "HZO", "SiO2", "other"]
+      notes: "HZO optional if you want ferroelectric gating."
+
+state_schema:
+  # Canonical state representation for deterministic sim + search.
+  geometry:
+    channel_length_nm: { type: "float", min: 10, max: 5000 }
+    channel_width_nm:  { type: "float", min: 10, max: 50000 }
+    channel_thickness_nm: { type: "float", min: 1, max: 200 }
+    gate_oxide_thickness_nm: { type: "float", min: 1, max: 200 }
+  materials:
+    channel_material: { type: "enum", values: ["IGZO", "ITZO"] }
+    channel_composition:
+      type: "map"
+      keys: ["In", "Ga", "Zn", "Sn", "O"]
+      values: { type: "float", min: 0.0, max: 1.0 }
+      notes: "Only include elements relevant to the chosen channel material."
+    gate_dielectric: { type: "enum", values: ["HfO2", "Al2O3", "HZO", "SiO2", "other"] }
+    contact_metal: { type: "string" }
+  process:
+    deposition: { type: "enum", values: ["sputter", "PLD", "ALD", "evap", "other"] }
+    substrate:  { type: "enum", values: ["glass", "polymer", "Si", "other"] }
+    max_process_temp_C: { type: "float", min: 0, max: 800 }
+    anneal: { type: "bool" }
+  device:
+    type: { type: "enum", values: ["nTFT", "pTFT", "CMOS_pair"] }
+    Vdd_V: { type: "float", min: 0.1, max: 20.0 }
+    bias_scheme: { type: "enum", values: ["DC", "pulsed"] }
+
+constraints:
+  - id: "composition_sums_to_1"
+    severity: "hard"
+    expr: "abs(sum(channel_composition.values()) - 1.0) <= 1e-3"
+
+  - id: "oxide_requires_oxygen"
+    severity: "hard"
+    expr: "channel_composition['O'] > 0.0"
+
+  - id: "allowed_channel_material"
+    severity: "hard"
+    expr: "channel_material in ['IGZO','ITZO']"
+
+  - id: "target_mobility_floor"
+    severity: "hard"
+    expr: "metrics.mobility_cm2_Vs >= 50.0"
+
+  - id: "low_temp_preference"
+    severity: "soft"
+    expr: "process.max_process_temp_C <= 200.0"
+    notes: "Tune threshold to your definition of 'room-temp compatible'."
+
+  - id: "no_negative_thickness"
+    severity: "hard"
+    expr: "geometry.channel_thickness_nm > 0 and geometry.gate_oxide_thickness_nm > 0"
+
+observables:
+  dc_curves:
+    Id_Vg: { type: "array", unit: "A" }
+    Id_Vd: { type: "array", unit: "A" }
+  extracted:
+    mobility_cm2_Vs: { type: "float", unit: "cm^2/V/s" }
+    Vth_V: { type: "float", unit: "V" }
+    Ion_A: { type: "float", unit: "A" }
+    Ioff_A: { type: "float", unit: "A" }
+    SS_mV_dec: { type: "float", unit: "mV/dec" }
+    hysteresis_V: { type: "float", unit: "V" }
+    Ron_ohm: { type: "float", unit: "ohm" }
+    gm_S: { type: "float", unit: "S" }
+    leakage_W: { type: "float", unit: "W" }
+  stability:
+    delta_Vth_biasstress_V: { type: "float", unit: "V" }
+    drift_mobility_pct: { type: "float", unit: "%" }
+
+metrics:
+  - name: "mobility_cm2_Vs"
+    direction: "maximize"
+    weight: 3.0
+    target: 50.0
+
+  - name: "Ion_Ioff"
+    direction: "maximize"
+    weight: 2.5
+    compute: "Ion_A / max(Ioff_A, 1e-18)"
+
+  - name: "SS_mV_dec"
+    direction: "target"
+    weight: 2.0
+    target: 60.0
+    notes: "Penalise excess above ideal (60 mV/dec = kT/q×ln10). Was 'minimize' which subtracted absolute value and dominated score."
+
+  - name: "Vth_V"
+    direction: "target"
+    weight: 1.0
+    target: 0.5
+    tol: 0.5
+
+  - name: "hysteresis_V"
+    direction: "minimize"
+    weight: 1.0
+
+  - name: "delta_Vth_biasstress_V"
+    direction: "minimize"
+    weight: 2.0
+
+  - name: "leakage_W"
+    direction: "minimize"
+    weight: 1.0
+
+  - name: "crystallization_risk"
+    direction: "minimize"
+    weight: 5.0  # Heavy penalty for unstable films
+    target: 0.1
+
+promotion:
+  thresholds:
+    mobility_cm2_Vs: { min: 10.0 }
+    SS_mV_dec: { max: 300.0 }
+    Ioff_A: { max: 1e-6 }
+
+simulation:
+  determinism:
+    required: true
+    seed_controls: ["rng_device_noise", "trap_sampling", "solver_jitter"]
+  budget:
+    default_steps: 1
+  model:
+    type: "compact_tft"
+    notes: "Implement a deterministic compact TFT model (charge-sheet + traps), then later upgrade to TCAD/DFT where needed."
+
+evidence:
+  champion_schema:
+    required_fields: ["state", "metrics", "seed", "hash", "timestamp_utc"]
+  reproducibility:
+    min_success_rate: "9/10"
+    seeds: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+
+ledger:
+  hash:
+    algorithm: "sha256"
+    include: ["state", "contract_version", "sim_model_version", "env_fingerprint"]
+  signing:
+    mode: "append_only"

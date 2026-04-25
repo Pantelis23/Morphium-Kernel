@@ -1,0 +1,165 @@
+{
+  "generated_at": "2026-02-23T00:32:08.191877+00:00",
+  "phi_updated_at": "2026-02-24T00:00:00+00:00",
+  "sim_model_version": "1.5",
+  "notes": "Tier 1.5 physics engine — ROBUST champions optimised for manufacturing yield, not peak performance. Each entry is the Pareto-optimal point that maximises MC yield while retaining competitive metrics. High-performance alternatives documented in notes fields. EM d33 is phi-calibrated (+1.5 pC/N, literature-calibrated 2026-02-24). L/PM/E remain uncalibrated (phi=0).",
+  "layers": {
+    "L": {
+      "layer": "L",
+      "sim_model_version": "1.5",
+      "ga_trials": 500,
+      "mc_yield_pct": 98.3,
+      "state": {
+        "materials": {
+          "channel_material": "IGZO",
+          "channel_composition": {
+            "In": 0.23988356404303798,
+            "Ga": 0.08943513607210508,
+            "Zn": 0.0008765236230273874,
+            "O": 0.6698047762618297
+          }
+        }
+      },
+      "metrics": {
+        "mobility_cm2_Vs": 37.676,
+        "Ion_A": 3.7676327324024517e-05,
+        "Ioff_A": 2.8742115908194355e-15,
+        "SS_mV_dec": 60.17,
+        "Vth_V": 0.5,
+        "hysteresis_V": 0.0015,
+        "delta_Vth_biasstress_V": 0.0002,
+        "leakage_W": 2.8742115908194355e-15,
+        "crystallization_risk": 0.18,
+        "_S_mix_nats": 0.6017,
+        "_N_v_eff": 0.0222,
+        "_delta_O": 0.3535,
+        "_mu_perc": 37.261,
+        "seed": 42
+      },
+      "score": 21.8711,
+      "hash": "a02494ff8685d21514666172fe3581039381c9bd9cad0961a4a7be83555f7715",
+      "timestamp_utc": "2026-02-22T23:48:21.479218+00:00",
+      "notes": "Robust champion. Ga_cation=27% (well above 20% minimum), cryst_risk=0.18 (comfortable margin below 0.50 threshold). MC yield 98.3% at +-3% sigma. High-performance alternative: In=0.253, Ga=0.072 (cryst=0.30, mu=42.3) scores higher but sits at cryst penalty boundary — not recommended for first fab run."
+    },
+    "PM": {
+      "layer": "PM",
+      "sim_model_version": "1.5",
+      "ga_trials": 600,
+      "mc_yield_pct": 100.0,
+      "phi_calibrated": true,
+      "phi_calibration_date": "2026-02-24",
+      "phi_calibration_notes": "delta_n phi offset +0.343 applied. Calibrated against Delaney 2020 (Adv. Funct. Mater.) for pure Sb2Se3: model=0.422 vs literature=0.765 at 1550 nm (-44.8% systematic underprediction). Model structural limitation: CM element mixing does not reconstruct Sb2Se3 compound polarisability. loss_k NOT corrected (literature k < 1e-5 is below detection limit; no reliable estimate for doped champion). Uncertainty: ±50% (1 calibration point, structural bias, no champion-specific literature). Update when >=3 ellipsometry measurements of champion film available.",
+      "state": {
+        "formula": "Sb2:Se3:Ge:Cl"
+      },
+      "metrics": {
+        "delta_n": 0.8642,
+        "delta_n_sim_raw": 0.5212,
+        "delta_n_phi_offset": 0.343,
+        "loss_k": 0.000483,
+        "fom": 1789.2,
+        "fom_sim_raw": 1078.8,
+        "_n_cryst_eff": 3.2391,
+        "_n_amorph_eff": 2.7776,
+        "_E_U_eff_eV": 0.0994,
+        "_halogen_passiv": 0.1286,
+        "_glass_bonus": true,
+        "seed": 42
+      },
+      "score": 5394.52,
+      "hash": "dda1cf07b055870144567988a6fb2786e74deb19c20158af8b5eae1054be06a8",
+      "timestamp_utc": "2026-02-23T00:32:08.191877+00:00",
+      "phi_updated_utc": "2026-02-24T00:00:00+00:00",
+      "notes": "Reference champion restored after GA yield analysis. GA found Sb0.675:Se4.36:Ge0.078:Cl0.032 with FOM=1187 (+10%) but delta_n=0.301 (39% MC yield). Reference has delta_n=0.864 (phi-corrected; sim_raw=0.521, 188% margin above 0.30 threshold) → 100% MC yield. The Sb/delta_n trade-off is fundamental: reducing Sb improves FOM but pushes delta_n to the threshold. For lab manufacture, use Sb2:Se3:Ge:Cl. Research note: GA composition requires stoichiometry control to <1% on Sb. delta_n=0.864 and FOM=1789 are phi-corrected (±50% uncertainty; structural model limitation)."
+    },
+    "E": {
+      "layer": "E",
+      "sim_model_version": "1.5",
+      "ga_trials": 300,
+      "mc_yield_pct": 100.0,
+      "state": {
+        "formula": "Hf0.4Zr0.557Al0.043O2",
+        "thickness_nm": 11.7,
+        "anneal_temp_C": 559.0
+      },
+      "metrics": {
+        "dielectric_constant_k": 28.10,
+        "bandgap_ev": 5.36,
+        "polarization_uC_cm2": 18.94,
+        "endurance_cycles": 47588720640.0
+      },
+      "score": 118.07,
+      "hash": "063ddfe8d29647310ace2d1ebd3242a586f85e6275d31156fd425ebb2d78d83b",
+      "timestamp_utc": "2026-02-23T00:32:08.191877+00:00",
+      "notes": "Robust champion at 559°C anneal (down from 583°C). Pr cost: 18.94 vs 19.16 (-1.1%), but 24°C furnace margin gained. Model sensitivity: anneal_temp CRITICAL (0.59 uC/cm2 per 10°C). Above 580°C agglomeration risk rises sharply. Stick to 550-560°C target with +-10°C furnace tolerance."
+    },
+    "EM": {
+      "layer": "EM",
+      "sim_model_version": "1.5",
+      "ga_trials": 300,
+      "mc_yield_pct": 76.6,
+      "phi_calibrated": true,
+      "phi_calibration_date": "2026-02-24",
+      "phi_calibration_notes": "d33 phi offset +1.5 pC/N applied. Calibrated against 3 independent literature validation points (PMC9030765: x=0.20, 9.9 pC/N; PMC8585448: x=0.29, 12.6 pC/N; multi-group consensus: x=0.40, 19.2 pC/N), all standard reactive magnetron sputtering. Model underpredicts by 8.9% mean. Uncertainty ±30% (3 points only). Update when >=5 real measurements from actual deposition system available. Akiyama 2009 dual-reactive cosputtering (x=0.43, 27.6 pC/N) excluded: different technique.",
+      "state": {
+        "formula": "Sc0.38Al0.62N",
+        "substrate": "Si",
+        "dep_temp_C": 490.0
+      },
+      "metrics": {
+        "d33_pC_N": 18.01,
+        "d33_pC_N_sim_raw": 16.51,
+        "d33_phi_offset": 1.5,
+        "youngs_modulus_GPa": 244.6,
+        "coupling_kt2_pct": 16.37,
+        "sc_fraction": 0.38,
+        "_phase_stability": 1.0,
+        "_sec_phase_risk": 0.540,
+        "seed": 42
+      },
+      "score": 67.49,
+      "hash": "67030d0e76a888e42a033ab9c455287093c0de4de788d59762dc3c486965885d",
+      "timestamp_utc": "2026-02-23T00:32:08.191877+00:00",
+      "phi_updated_utc": "2026-02-24T00:00:00+00:00",
+      "notes": "Robust champion at x_Sc=0.38 (down from 0.42). d33 cost: 18.01 vs high-perf alternative (18.28 pC/N phi-corrected), but MC yield 76.6% vs 0.1% for x=0.42. Phase fully stable (x=0.38 < x_cliff=0.41 on Si). sec_phase_risk threshold: _sec_phase_risk <= 0.60 (above this secondary ScN/Sc2O3 formation very likely). Literature confirms secondary phase above ~40% Sc is a real fab risk. DO NOT use x=0.42 for lab manufacture — MC analysis shows it fails 99.9% of the time under normal Sc-target calibration variability. d33=18.01 is phi-corrected (sim_raw=16.51 + phi=+1.5). Calibration uncertainty: ±30%."
+    },
+    "M": {
+      "layer": "M",
+      "sim_model_version": "unknown",
+      "ga_trials": 100,
+      "mc_yield_pct": null,
+      "state": {
+        "foglet": {
+          "structure": {
+            "shell_material": "HfO2:DLC"
+          },
+          "latching": {
+            "type": "electrostatic",
+            "electrode_geometry": {
+              "area_um2": 414.4,
+              "gap_nm": 26.4
+            }
+          },
+          "adhesion": {
+            "type": "dry_gecko",
+            "pad_area_um2": 198.845
+          },
+          "power": {
+            "max_voltage_V": 94.05
+          }
+        }
+      },
+      "metrics": {
+        "latch_normal_force_mN": 551.294,
+        "adhesion_shear_strength_kPa": 473.6,
+        "release_energy_uJ": 0.442,
+        "cycle_life": 10000,
+        "seed": 4
+      },
+      "score": 17049.346,
+      "hash": "152862f694bdd18170fcdd09171fd40086875fa3a55b28c2a83caf4827ccaa13",
+      "timestamp_utc": "2026-02-18T22:26:55+00:00",
+      "notes": "Carried forward from v1.0. TRL 1 (conceptual). No physics upgrade planned."
+    }
+  }
+}

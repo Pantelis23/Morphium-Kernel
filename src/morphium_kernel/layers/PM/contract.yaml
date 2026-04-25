@@ -1,0 +1,26 @@
+# Morphium-PM (Photonics) Contract
+layer: PM
+version: 1.0
+
+state:
+  formula: { type: "string" }
+
+metrics:
+  - name: fom
+    direction: maximize
+    target: 50.0
+    weight: 5.0
+  - name: delta_n
+    direction: maximize
+    target: 1.0
+    weight: 1.0
+  - name: loss_k
+    direction: minimize
+    target: 0.01
+    weight: 2.0
+
+promotion:
+  thresholds:
+    fom: { min: 500.0 }
+    delta_n: { min: 0.30 }
+    loss_k: { max: 0.002 }

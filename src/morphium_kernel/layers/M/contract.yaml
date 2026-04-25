@@ -1,0 +1,167 @@
+# Morphium-M (Modular Mechanics / Foglets) Contract
+layer:
+  id: "M"
+  name: "Morphium-M"
+  domain: "modular_mechanics"
+  objective: "Macroscopic shape-shifting via foglets built from the Morphium E/EM/PM stack."
+  provenance:
+    paper_ref: "Future Directions 3.2"
+  dependencies:
+    required_layers: ["E", "EM", "PM"]
+  mechanism:
+    primary: ["electrostatic_latching", "dry_adhesion"]
+
+state_schema:
+  foglet:
+    form_factor:
+      characteristic_length_um: { type: "float", min: 1, max: 10000 }
+      mass_ug: { type: "float", min: 0.001, max: 1e6 }
+    structure:
+      frame_material: { type: "string" }
+      shell_material: { type: "string" }
+    power:
+      energy_storage: { type: "enum", values: ["capacitive", "battery", "tethered", "harvested"] }
+      max_voltage_V: { type: "float", min: 1.0, max: 1000.0 }
+      max_power_mW: { type: "float", min: 0.001, max: 10000.0 }
+    compute:
+      controller: { type: "enum", values: ["finite_state", "microcode", "distributed"] }
+      memory_bits: { type: "int", min: 0, max: 1000000000 }
+    actuation:
+      type: { type: "enum", values: ["piezo", "electrostatic", "thermal", "magnetic", "hybrid"] }
+      em_recipe_ref: { type: "string", notes: "Pointer into ledger/recipes.ndjson for EM champion." }
+    latching:
+      type: { type: "enum", values: ["electrostatic", "mechanical", "hybrid"] }
+      electrode_geometry: { type: "map", keys: ["area_um2","gap_nm"], values: { type: "float" } }
+      latch_control: { type: "enum", values: ["binary", "PWM", "adaptive"] }
+    adhesion:
+      type: { type: "enum", values: ["dry_gecko", "microspines", "van_der_Waals", "hybrid"] }
+      pad_area_um2: { type: "float", min: 1, max: 1e12 }
+      detach_mode: { type: "enum", values: ["peel", "shear_release", "vibration_assist"] }
+    comms:
+      type: { type: "enum", values: ["optical", "rf", "wired_touch", "acoustic", "none"] }
+      range_mm: { type: "float", min: 0, max: 1000000 }
+    sensing:
+      modalities: { type: "list", values: ["contact", "proximity", "strain", "temperature", "optical"] }
+
+constraints:
+  - id: "requires_underlying_stack"
+    severity: "hard"
+    expr: "deps.contains(['E','EM','PM'])"
+
+  - id: "latch_mechanism_supported"
+    severity: "hard"
+    expr: "foglet.latching.type in ['electrostatic','mechanical','hybrid']"
+
+  - id: "adhesion_mechanism_supported"
+    severity: "hard"
+    expr: "foglet.adhesion.type in ['dry_gecko','microspines','van_der_Waals','hybrid']"
+
+  - id: "safe_voltage_envelope"
+    severity: "soft"
+    expr: "foglet.power.max_voltage_V <= params.safety.max_voltage_V"
+    notes: "Set params.safety.max_voltage_V per lab setup."
+
+  - id: "nonzero_latch_area"
+    severity: "hard"
+    expr: "foglet.latching.electrode_geometry['area_um2'] > 0"
+
+  - id: "positive_gap"
+    severity: "hard"
+    expr: "foglet.latching.electrode_geometry['gap_nm'] > 0"
+
+observables:
+  latch:
+    normal_force_mN: { type: "float", unit: "mN" }
+    shear_force_mN:  { type: "float", unit: "mN" }
+    release_energy_uJ: { type: "float", unit: "uJ" }
+    cycle_life: { type: "int", unit: "cycles" }
+  adhesion:
+    shear_strength_kPa: { type: "float", unit: "kPa" }
+    peel_strength_N_m:  { type: "float", unit: "N/m" }
+    detachment_latency_ms: { type: "float", unit: "ms" }
+  mobility:
+    step_size_um: { type: "float", unit: "um" }
+    step_energy_uJ: { type: "float", unit: "uJ" }
+    max_speed_mm_s: { type: "float", unit: "mm/s" }
+  structure:
+    payload_ratio: { type: "float", unit: "x" }
+    stiffness_N_m: { type: "float", unit: "N/m" }
+    failure_rate_pct: { type: "float", unit: "%" }
+  swarm_level:
+    packing_density: { type: "float", unit: "foglets/mm^3" }
+    reconfiguration_time_s: { type: "float", unit: "s" }
+    energy_per_cm3_reconfig_J: { type: "float", unit: "J" }
+
+metrics:
+  - name: "latch_normal_force_mN"
+    direction: "maximize"
+    weight: 2.0
+
+  - name: "adhesion_shear_strength_kPa"
+    direction: "maximize"
+    weight: 2.0
+
+  - name: "release_energy_uJ"
+    direction: "minimize"
+    weight: 1.0
+
+  - name: "cycle_life"
+    direction: "maximize"
+    weight: 1.5
+
+  - name: "step_energy_uJ"
+    direction: "minimize"
+    weight: 1.5
+
+  - name: "payload_ratio"
+    direction: "maximize"
+    weight: 1.0
+
+  - name: "reconfiguration_time_s"
+    direction: "minimize"
+    weight: 2.0
+
+  - name: "failure_rate_pct"
+    direction: "minimize"
+    weight: 3.0
+
+simulation:
+  determinism:
+    required: true
+    seed_controls: ["contact_noise", "surface_variation", "adhesion_microstructure"]
+  models:
+    - name: "electrostatic_latch"
+      notes: "Parallel-plate + fringe correction; includes dielectric breakdown guard."
+    - name: "dry_adhesion"
+      notes: "Empirical + microstructure parameterization; later upgrade to contact mechanics."
+    - name: "swarm_kinematics"
+      notes: "Aggregate model first; later discrete-event + collision + path planning."
+
+bridges:
+  from_layers:
+    E:
+      provides: ["logic_in_memory", "nonvolatile_state"]
+    EM:
+      provides: ["actuation", "vibration_assist_detach"]
+    PM:
+      provides: ["optical_comms", "metasurface_skin_optional"]
+  to_next:
+    notes: "M is typically top-of-stack; promotion is to larger assemblies or system demos."
+
+evidence:
+  champion_schema:
+    required_fields: ["foglet_state", "metrics", "seed", "hash", "timestamp_utc"]
+  reproducibility:
+    min_success_rate: "9/10"
+    seeds: [201,202,203,204,205,206,207,208,209,210]
+
+ledger:
+  hash:
+    algorithm: "sha256"
+    include: ["state", "contract_version", "sim_model_version", "env_fingerprint"]
+  signing:
+    mode: "append_only"
+
+params:
+  safety:
+    max_voltage_V: 200.0

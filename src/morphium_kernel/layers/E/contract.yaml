@@ -1,0 +1,29 @@
+# Morphium-E (Logic/Memory) Contract
+layer: E
+version: 1.0
+
+state:
+  - name: formula
+    type: string
+  - name: thickness_nm
+    type: float
+
+metrics:
+  - name: dielectric_constant_k
+    direction: maximize
+    target: 25.0
+    weight: 2.0
+  - name: bandgap_ev
+    direction: maximize
+    target: 5.0
+    weight: 1.0
+  - name: polarization_uC_cm2
+    direction: maximize
+    target: 10.0
+    weight: 3.0
+
+promotion:
+  thresholds:
+    dielectric_constant_k: { min: 15.0 }
+    polarization_uC_cm2: { min: 10.0 }
+    endurance_cycles: { min: 1e9 }

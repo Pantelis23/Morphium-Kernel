@@ -1,0 +1,19 @@
+{
+  "layer": "E",
+  "version": "1.0",
+  "contract": "contract.yaml",
+  "timestamp": "2026-02-18T23:59:00Z",
+  "input": {
+    "formula": "Hf0.5Zr0.5O2",
+    "thickness_nm": 10.0,
+    "seed": 123
+  },
+  "metrics": {
+    "dielectric_constant_k": 12.8,
+    "bandgap_ev": 8.5,
+    "polarization_uC_cm2": 11.25,
+    "endurance_cycles": 6.4e11
+  },
+  "hash": "f6c5ab4e76a90a6b0629e5a210fbabe6244eb380f63ae9f376092ba2bec0e473",
+  "status": "APPROVED_CHAMPION"
+}

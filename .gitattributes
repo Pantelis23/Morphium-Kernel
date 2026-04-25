@@ -1,0 +1,14 @@
+# Default: normalise line endings in the repo to LF
+* text=auto eol=lf
+
+# Source
+*.py     text diff=python
+*.yaml   text
+*.yml    text
+*.md     text
+*.json   text
+*.cff    text
+*.txt    text
+
+# Data — keep as-is, no diff churn
+*.ndjson text -diff

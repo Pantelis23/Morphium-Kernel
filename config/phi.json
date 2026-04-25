@@ -1,0 +1,61 @@
+{
+    "_description": "Per-layer phi (φ) calibration offsets for sim-to-real correction. Applied as: metric_corrected = metric_sim + phi_offset. All zeros = simulation only. Place actual metric corrections under 'offsets' sub-dict.",
+    "_format": "Layer key → {calibration metadata + 'offsets': {metric: additive_offset}}",
+    "_version": "1.2",
+    "L": {
+        "_calibration_status": "uncalibrated",
+        "_notes": "IGZO TFT. Bind via ~5 Hall mobility + XRD runs. Main gap: O2 flow variability (+-30%). TODO: fetch IGZO open dataset.",
+        "offsets": {
+            "mobility_cm2_Vs": 0.0,
+            "crystallization_risk": 0.0
+        }
+    },
+    "PM": {
+        "_calibration_status": "literature_calibrated",
+        "_calibration_date": "2026-02-24",
+        "_calibration_method": "single_point_additive",
+        "_calibration_n_points": 1,
+        "_calibration_formula": "Sb2Se3",
+        "_mean_bias_pct": -44.8,
+        "_uncertainty_pct": 50.0,
+        "_sources": [
+            "Delaney et al. 2020 (Adv. Funct. Mater. 10.1002/adfm.202002447): n_amorph=3.285, n_cryst=4.050, delta_n=0.765 at 1550 nm",
+            "Confirmed by Delaney 2021 (Sci. Adv.), Alam 2022 (Adv. Opt. Mat.), Alkhazraji 2023 (Opt. Mat. Expr.), Chen 2025 (Adv. Phys. Res.)"
+        ],
+        "_notes": "Model uses Clausius-Mossotti element mixing which does NOT reconstruct Sb2Se3 compound optical constants (orthorhombic structure has emergent polarisability). Model underpredicts delta_n by 44.8% for pure Sb2Se3 — structural limitation, not just calibration offset. Champion formula (Sb2:Se3:Ge:Cl) has Ge/Cl dopants with unknown effect on real delta_n. k NOT calibrated: literature k < 1e-5 is below ellipsometry detection limit; applying phi would give unrealistic k near zero. Update when >=3 ellipsometry measurements of champion film deposited on SiO2/Si at target conditions.",
+        "_excluded_correction": "loss_k: literature says k < 1e-5 (detection floor) for pure Sb2Se3; champion Ge+Cl dopants may raise k; sputtered film roughness also contributes; no reliable literature value for champion formula.",
+        "offsets": {
+            "delta_n": 0.343,
+            "loss_k": 0.0,
+            "fom": 0.0
+        }
+    },
+    "E": {
+        "_calibration_status": "uncalibrated",
+        "_notes": "HZO ferroelectric. Bind via P-E loop + C-V. Main gap: wake-up cycling shifts Pr by +20-40% (not in model). No open dataset found.",
+        "offsets": {
+            "polarization_uC_cm2": 0.0,
+            "dielectric_constant_k": 0.0,
+            "endurance_cycles": 0.0
+        }
+    },
+    "EM": {
+        "_calibration_status": "literature_calibrated",
+        "_calibration_date": "2026-02-24",
+        "_calibration_method": "mean_residual_additive",
+        "_calibration_n_points": 3,
+        "_mean_bias_pct": -8.9,
+        "_uncertainty_pct": 30.0,
+        "_sources": [
+            "PMC9030765: x=0.20, d33=9.9 pC/N (pulsed DC magnetron, Si/Mo, 300C)",
+            "PMC8585448: x=0.29, d33=12.6 pC/N (pulsed DC magnetron, SOI, 300C)",
+            "Multi-group consensus: x=0.40, d33=19.2 pC/N (standard sputtering, ~350C)"
+        ],
+        "_excluded": "Akiyama 2009 dual-reactive cosputtering (x=0.43, 27.6 pC/N) excluded: different technique, -59% model error",
+        "_notes": "Model underpredicts d33 by 8.9% vs standard reactive magnetron sputtering. phi=+1.5 pC/N at champion (Sc0.38/Si/490C). Update when 5+ measurements from actual deposition system available.",
+        "offsets": {
+            "d33_pC_N": 1.5,
+            "_sec_phase_risk": 0.0
+        }
+    }
+}
