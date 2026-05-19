@@ -7,7 +7,7 @@ authors:
     given-names: "Pantelis"
     alias: "Pantelis23"
 repository-code: "https://github.com/Pantelis23/Morphium-Kernel"
-license: MIT
+license: Apache-2.0
 license-data: CC-BY-4.0
 keywords:
   - reconfigurable-computing
