@@ -477,7 +477,14 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
         if robust:
             yld, _ = _mc_yield(kc, layer, candidate_state, n_samples=mc_samples,
                                model_sigma_scale=model_scale)
-            score = yld + 1e-6 * nominal_score
+            # Tiebreaker: break ties among EQUAL-yield candidates by nominal
+            # metric. nominal_score is unbounded (e.g. PM fom can reach ~1e5), so
+            # a fixed 1e-6 weight could exceed a full yield quantum (1/mc_samples)
+            # and override the yield objective (audit M-8). Squash nominal_score
+            # into (0,1) and weight it strictly below half a yield quantum, so it
+            # only ever separates otherwise-tied candidates.
+            squash = 0.5 * (1.0 + nominal_score / (1.0 + abs(nominal_score)))  # -> (0,1)
+            score = yld + (0.5 / mc_samples) * squash
         else:
             yld = None
             score = nominal_score
