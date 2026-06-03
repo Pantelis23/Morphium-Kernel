@@ -88,9 +88,17 @@ E_U_MIN      = 0.040   # [eV] floor (perfect glass, no passivation can go below)
 K_DISORDER_FRAC = 0.05
 
 # ---------------------------------------------------------------------------
-# GSST-like glass-former network bonus (Ge + Sb + Se co-present)
+# Glass-former network effect (Ge + Sb + Se co-present)
 # ---------------------------------------------------------------------------
-GLASS_DELTA_N_BOOST = 0.12    # fractional Δn enhancement from glass network
+# Δn EFFECT — sign-corrected 2026-06-03 from literature. Incorporating Ge (or
+# Si) into Sb2Se3 LOWERS the amorphous→crystalline index contrast, it does not
+# raise it: Ge2Sb2Se5 (GSSe) shows markedly lower Δn than Sb2Se3, and 20% Si
+# reduces Δn (Zhang et al. 2019, Nat. Commun. 10:4279; "Incorporating Si into
+# Sb2Se3", arXiv:2510.14990). The previous +0.12 "boost" had the WRONG SIGN.
+# Net effect for the modest Ge doping in Sb2Se3:Ge:Cl is a small reduction.
+GLASS_DELTA_N_BOOST = -0.05   # fractional Δn change from glass network (Ge LOWERS Δn)
+# k REDUCTION retained: the rigid, homogeneous Ge-Sb-Se network lowers
+# structural disorder (E_U) → lower NIR loss. This direction is supported.
 GLASS_K_REDUCTION   = 0.20    # fractional k reduction from network ordering
 
 # ---------------------------------------------------------------------------
@@ -301,12 +309,13 @@ class MorphiumSimulatorPM:
         k_amorph = max(k_amorph, 1e-6)   # absolute floor (numerical)
 
         # ----------------------------------------------------------------
-        # 6.  Glass-former network bonus (Ge + Sb + Se co-present)
+        # 6.  Glass-former network effect (Ge + Sb + Se co-present)
         #
         #     Physical origin: tetrahedral Ge anchors connect pyramidal Sb
-        #     units through Se bridges, producing a rigid, homogeneous
-        #     glass network.  This gives:
-        #       • More complete, ordered crystallisation → higher n_cryst
+        #     units through Se bridges, producing a rigid, homogeneous glass.
+        #       • Δn: Ge/Si incorporation LOWERS the index contrast (GSSe <
+        #         Sb2Se3; Si:Sb2Se3 < Sb2Se3) — sign-corrected, see the
+        #         GLASS_DELTA_N_BOOST constant above.
         #       • Less structural fluctuation in amorph → lower E_U → lower k
         # ----------------------------------------------------------------
         has_Ge = fracs.get("Ge", 0.0) > 0.01

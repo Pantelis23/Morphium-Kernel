@@ -1,7 +1,7 @@
 {
     "_description": "Per-layer phi (φ) calibration offsets for sim-to-real correction. Applied as: metric_corrected = metric_sim + phi_offset. All zeros = simulation only. Place actual metric corrections under 'offsets' sub-dict.",
     "_format": "Layer key → {calibration metadata + 'offsets': {metric: additive_offset}}",
-    "_version": "1.3",
+    "_version": "1.4",
     "L": {
         "_calibration_status": "literature_calibrated",
         "_calibration_date": "2026-06-03",
@@ -23,17 +23,20 @@
     },
     "PM": {
         "_calibration_status": "literature_calibrated",
-        "_calibration_date": "2026-02-24",
-        "_calibration_method": "single_point_additive",
-        "_calibration_n_points": 1,
+        "_calibration_date": "2026-06-03",
+        "_calibration_method": "multi_point_additive",
+        "_calibration_n_points": 4,
         "_calibration_formula": "Sb2Se3",
         "_mean_bias_pct": -44.8,
-        "_uncertainty_pct": 50.0,
+        "_uncertainty_pct": 18.0,
         "_sources": [
-            "Delaney et al. 2020 (Adv. Funct. Mater. 10.1002/adfm.202002447): n_amorph=3.285, n_cryst=4.050, delta_n=0.765 at 1550 nm",
-            "Confirmed by Delaney 2021 (Sci. Adv.), Alam 2022 (Adv. Opt. Mat.), Alkhazraji 2023 (Opt. Mat. Expr.), Chen 2025 (Adv. Phys. Res.)"
+            "Delaney et al. 2020 (Adv. Funct. Mater. 10.1002/adfm.202002447) & 2021 (Sci. Adv. 7 eabg3500, PMC8208718): n_amorph=3.285, n_cryst=4.050, delta_n=0.765 at 1550 nm (same Southampton lineage; anchor)",
+            "Opt. Mater. Express 12(7):2815 (2022): independent group, evaporated Sb-Se, delta_n up to 0.823 at ~1550 nm",
+            "Adv. Phys. Res. review 2024 (apxr.202400080): n_amorph=3.27, n_cryst=4.04, delta_n~0.77 at 1550 nm",
+            "Composition trend (Zhang 2019 Nat. Commun. 10:4279; arXiv:2510.14990): Ge (GSSe) and Si incorporation LOWER delta_n vs pure Sb2Se3; Te (GSST) raises it; Cl has no telecom index effect",
+            "Loss: k < 1e-5 in both phases at 1550 nm across all photonics sources (at/below ellipsometry floor; device loss ~100 dB/cm crystalline)"
         ],
-        "_notes": "Model uses Clausius-Mossotti element mixing which does NOT reconstruct Sb2Se3 compound optical constants (orthorhombic structure has emergent polarisability). Model underpredicts delta_n by 44.8% for pure Sb2Se3 — structural limitation, not just calibration offset. Champion formula (Sb2:Se3:Ge:Cl) has Ge/Cl dopants with unknown effect on real delta_n. k NOT calibrated: literature k < 1e-5 is below ellipsometry detection limit; applying phi would give unrealistic k near zero. Update when >=3 ellipsometry measurements of champion film deposited on SiO2/Si at target conditions.",
+        "_notes": "Web-literature recalibration 2026-06-03 (was single-point +-50%). Pure Sb2Se3 delta_n is well-constrained: 0.77 +- 0.06 across multiple groups -> uncertainty tightened 50% -> 18%. The structural underprediction remains (Clausius-Mossotti element mixing gives raw n_amorph~2.71/n_cryst~3.13 vs real 3.285/4.05; +0.343 offset anchors pure-Sb2Se3 delta_n to 0.765). PAIRED MODEL FIX (PM/api.py, same date): the glass-former GLASS_DELTA_N_BOOST had the WRONG SIGN (+0.12, raising delta_n for Ge); literature shows Ge/Si LOWER delta_n (GSSe << Sb2Se3), corrected to -0.05. Residual 18% (vs pure-material 8%) reflects: no direct 1550nm n/k for Sb2Se3:Ge:Cl specifically (only Ge/Si analogs), and k unresolved (upper bound only). Update when ellipsometry of the actual Ge:Cl champion film is available.",
         "_excluded_correction": "loss_k: literature says k < 1e-5 (detection floor) for pure Sb2Se3; champion Ge+Cl dopants may raise k; sputtered film roughness also contributes; no reliable literature value for champion formula.",
         "offsets": {
             "delta_n": 0.343,
