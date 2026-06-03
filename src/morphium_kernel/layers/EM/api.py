@@ -258,12 +258,17 @@ class MorphiumSimulatorEM:
         d33_eff *= noise_d33
         E_eff   *= noise_E
 
-        # Actuation fatigue endurance (RELIABILITY): ScAlN piezo-MEMS cycle life
-        # is limited by mechanical fatigue + secondary-phase (rock-salt) defect
-        # nucleation. HEURISTIC (uncalibrated): a stable, well-textured wurtzite
-        # film (high f_stab, low sec_phase_risk) endures more flex cycles. ~1e11
-        # baseline (AlN-class MEMS), derated by phase risk.
-        actuation_endurance = min(1.0e11, 1.0e11 * f_stab * (1.0 - 0.5 * sec_phase_risk))
+        # Actuation fatigue endurance (RELIABILITY). The foglet drives EM as a
+        # SUB-COERCIVE PIEZO actuator (no domain switching) -> effectively
+        # fatigue-free: AlN piezo-MEMS show no measurable fatigue (>=1e12 acoustic
+        # cycles in fielded RF filters; Mariani: 1e4 cyc at 83% fracture strength,
+        # no change). Real limiters are leakage/TDDB and electrode delamination,
+        # not cyclic fatigue; Sc degrades breakdown field + phase purity (AOG /
+        # rock-salt onset ~30-35% Sc). Base 1e12 (AlN) tapered by phase stability
+        # + secondary-phase risk. NB: FERROELECTRIC full-switching use would be
+        # only ~1e8 -- NOT the foglet's regime. (Research 2026-06-03: Jung 2025
+        # Microsyst.Nanoeng.; Cho 2025 Nat.Commun.)
+        actuation_endurance = min(1.0e12, 1.0e12 * f_stab * (1.0 - 0.5 * sec_phase_risk))
 
         return {
             "d33_pC_N":            round(d33_eff, 2),

@@ -121,13 +121,20 @@ class MorphiumSimulatorM:
         # --- cycle_life: latch endurance (mechanism-dependent) ---
         field_V_per_nm = (voltage / (gap * 1e9)) if uses_field else 0.0
         bd_margin  = (1.0 / field_V_per_nm) if field_V_per_nm > 0 else 1e6   # E_bd(1.0)/E_op
+        # Research 2026-06-03 (Goldsmith 2001; van Spengen 2012; Muhlstein 2001):
+        # electrostatic MEMS fail by dielectric CHARGING (not breakdown), ~a
+        # decade of life per modest field reduction -> field power law, floor
+        # ~1e3 at high field. Mechanical is NOT categorically better: cold-
+        # switched/unloaded micro-contacts reach ~1e10, but loaded/hot-switched
+        # only 1e6-1e8 (wear/stiction). The foglet latch holds position (cold-
+        # switched), so ~1e10. Silicon structural fatigue caps everything ~1e11.
         if latch_type == "mechanical":
-            cyc_latch = 1.0e8                    # mechanical fatigue, no field wear
+            cyc_latch = 1.0e10                   # cold-switched interlock (loaded would be 1e6-1e8)
         elif latch_type == "hybrid":
-            cyc_latch = 5.0e7                    # mechanical hold + brief field pulses
-        else:                                    # electrostatic: field-stress power law
+            cyc_latch = 1.0e9                    # mechanical hold + low-duty field pulses
+        else:                                    # electrostatic: dielectric-charging-limited
             cyc_latch = 1e3 * (max(bd_margin, 0.1) ** 4)
-        cycle_life = min(cyc_latch, 1e12, e_endur)   # E-layer NVM endurance caps it
+        cycle_life = min(cyc_latch, 1.0e11, e_endur)   # silicon-fatigue cap ~1e11; E-NVM endurance
 
         # --- failure_rate_pct (heaviest contract metric): combine independent
         #     failure modes via soft margins. Breakdown applies only to

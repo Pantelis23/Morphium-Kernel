@@ -12,12 +12,17 @@ A stack lasts only as long as its weakest layer (min endurance) and is made
 correctly only if every layer is (compounded fab-survival). Champions are found
 by the same robust+model-risk search as elsewhere (commit=False, ledger clean).
 
-Endurance trust per layer (honest, post-audit):
+Endurance trust per layer (honest; literature-anchored 2026-06-03, see
+docs/DATA_PROVENANCE.md for citations and caveats):
   E  endurance_cycles      — calibrated (HZO P-E cycling literature)
-  PM cycling_endurance     — literature-grounded (Sb2Se3 ~1e6-1e9, Delaney 2021)
-  L  operational_endurance — HEURISTIC (bias-stress Vth-drift proxy)
-  EM actuation_endurance   — HEURISTIC (phase-stability fatigue proxy)
-  M  cycle_life            — HEURISTIC (electrostatic field-stress power law)
+  PM cycling_endurance     — lit-grounded; GEOMETRY-driven (nanostructuring 1e8)
+  L  operational_endurance — lit, but METRIC CAVEAT: a-IGZO switching is
+                             effectively unbounded; real limit is Vth-drift
+                             LIFETIME (time), not cycles
+  EM actuation_endurance   — lit-grounded: sub-coercive piezo is ~fatigue-free
+                             (>=1e12); ferroelectric switching would be ~1e8
+  M  cycle_life            — lit-grounded (MEMS charging/contact data); the
+                             foglet-specific magnitudes are still extrapolated
 
 Usage:
   python3 tools/reliability.py --root . --model-risk
@@ -37,9 +42,9 @@ from loop_kernel_adapter import run_search
 ENDURANCE_KEY = {
     "E":  ("endurance_cycles",      "calibrated"),
     "PM": ("cycling_endurance",     "lit-grounded"),
-    "L":  ("operational_endurance", "heuristic"),
-    "EM": ("actuation_endurance",   "heuristic"),
-    "M":  ("cycle_life",            "heuristic"),
+    "L":  ("operational_endurance", "lit*(metric)"),   # *switching unbounded; real limit is Vth-drift LIFETIME
+    "EM": ("actuation_endurance",   "lit-grounded"),   # sub-coercive piezo: fatigue-free
+    "M":  ("cycle_life",            "lit-grounded"),   # MEMS charging/contact data; foglet magnitudes extrapolated
 }
 LABEL = {"E": "E  (HZO ferro)", "EM": "EM (ScAlN piezo)", "PM": "PM (Sb2Se3 photon)",
          "L": "L  (IGZO TFT)", "M": "M  (foglet mech)"}
@@ -107,8 +112,11 @@ def main():
           f"(all layers made correctly; weakest = {weak_f})")
     print(f"  M-foglet failure_rate       = {mM.get('failure_rate_pct')}%  "
           f"(model's own combined-margin metric)")
-    print(f"\n  Note: endurance is per-layer cycle life; 'heuristic' layers (L/EM/M)"
-          f"\n  use uncalibrated proxies — treat magnitudes as order-of-magnitude.")
+    print(f"\n  Note: endurance values are literature-anchored (2026-06-03) but carry"
+          f"\n  caveats — L's metric is ill-defined (a-IGZO switching is effectively"
+          f"\n  unbounded; real limit is Vth-drift LIFETIME), and M's foglet-specific"
+          f"\n  magnitudes are extrapolated. Treat as order-of-magnitude; see"
+          f"\n  docs/DATA_PROVENANCE.md for the trust + citations behind each.")
 
 
 if __name__ == "__main__":

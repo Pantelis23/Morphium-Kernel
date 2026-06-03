@@ -125,7 +125,7 @@ PROMOTION_THRESHOLDS = {
         "fom":     ("ge", 500.0),
         "delta_n": ("ge", 0.30),
         "loss_k":  ("le", 1e-4),
-        "cycling_endurance": ("ge", 1e6),   # push endurance (geometry-driven; was the stack wear cap)
+        "cycling_endurance": ("ge", 5e7),   # push endurance toward nanostructuring (geometry lever; accepts its loss penalty)
     },
     "E": {
         "polarization_uC_cm2": ("ge", 10.0),

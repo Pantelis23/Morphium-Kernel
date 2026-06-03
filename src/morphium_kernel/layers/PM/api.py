@@ -354,6 +354,15 @@ class MorphiumSimulatorPM:
         # ----------------------------------------------------------------
         # 8.  Figure of merit
         # ----------------------------------------------------------------
+        # Advanced device integration (the endurance lever, section 9) is NOT
+        # free: etching/nanostructuring adds sidewall-scattering optical loss
+        # (Sb2Se3 nanostructured ~0.1 dB/pi is still low, hence a modest factor),
+        # encapsulation a small cladding-interface loss. This gives the search a
+        # real endurance-vs-loss tradeoff. NOTE (honest): the model does not yet
+        # penalise fab YIELD for advanced integration (more process steps -> lower
+        # reproducible yield) -- a documented simplification.
+        _LOSS_PENALTY = {"planar": 1.0, "encapsulated": 1.2, "nanostructured": 2.0}
+        k_amorph *= _LOSS_PENALTY.get(state.get("integration", "planar"), 1.0)
         fom = delta_n / k_amorph
 
         # ----------------------------------------------------------------
