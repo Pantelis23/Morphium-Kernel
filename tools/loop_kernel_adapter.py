@@ -239,11 +239,33 @@ def generate_random_state_EM():
     }
 
 
+def generate_random_state_M():
+    """Random foglet DESIGN: electrode geometry, drive voltage, adhesion, size.
+    The search optimises these against the M model's reliability/locomotion
+    metrics (failure_rate, latch, payload, speed)."""
+    return {
+        "foglet": {
+            "form_factor": {"characteristic_length_um": round(random.uniform(20.0, 500.0), 1)},
+            "structure": {"shell_material": "HfO2:DLC"},
+            "latching": {"type": "electrostatic",
+                         "electrode_geometry": {
+                             "area_um2": round(random.uniform(50.0, 500.0), 1),
+                             "gap_nm":   round(random.uniform(20.0, 200.0), 1)}},
+            "adhesion": {"type": random.choice(
+                             ["dry_gecko", "microspines", "van_der_Waals", "hybrid"]),
+                         "pad_area_um2": round(random.uniform(50.0, 1000.0), 1)},
+            "power": {"max_voltage_V": round(random.uniform(10.0, 80.0), 1),
+                      "max_power_mW": 1.0},
+        }
+    }
+
+
 GENERATORS = {
     "L":  generate_random_state_L,
     "PM": generate_random_state_PM,
     "E":  generate_random_state_E,
     "EM": generate_random_state_EM,
+    "M":  generate_random_state_M,
 }
 
 
@@ -355,11 +377,27 @@ def mutate_EM(state, step=0.02):
     return new_state
 
 
+def mutate_M(state, step=0.10):
+    """Mutate a foglet design — nudge electrode area/gap, drive voltage, pad area
+    (the knobs that trade latch strength vs failure-rate vs speed)."""
+    s = json.loads(json.dumps(state))
+    f = s["foglet"]
+    eg = f["latching"]["electrode_geometry"]
+    eg["area_um2"] = max(eg["area_um2"] * (1 + random.gauss(0, step)), 10.0)
+    eg["gap_nm"]   = min(max(eg["gap_nm"] * (1 + random.gauss(0, step)), 10.0), 300.0)
+    f["power"]["max_voltage_V"] = min(max(
+        f["power"]["max_voltage_V"] * (1 + random.gauss(0, step)), 5.0), 100.0)
+    f["adhesion"]["pad_area_um2"] = max(
+        f["adhesion"]["pad_area_um2"] * (1 + random.gauss(0, step)), 10.0)
+    return s
+
+
 MUTATORS = {
     "L":  mutate_L,
     "PM": mutate_PM,
     "E":  mutate_E,
     "EM": mutate_EM,
+    "M":  mutate_M,
 }
 
 
@@ -627,6 +665,7 @@ PERF_METRIC = {
     "PM": ("fom",                 "FOM (dn/k)"),
     "E":  ("polarization_uC_cm2", "Pr uC/cm2"),
     "EM": ("d33_pC_N",            "d33 pC/N"),
+    "M":  ("max_speed_mm_s",      "speed mm/s"),
 }
 
 
@@ -637,6 +676,10 @@ def _recipe_str(layer, state):
         cats = {k: v for k, v in comp.items() if k != "O"}
         t = sum(cats.values()) or 1.0
         return "IGZO cation " + " ".join(f"{k}={v/t:.3f}" for k, v in cats.items())
+    if layer == "M":
+        f = state["foglet"]; eg = f["latching"]["electrode_geometry"]
+        return (f"foglet A={eg['area_um2']:.0f}um2 gap={eg['gap_nm']:.0f}nm "
+                f"V={f['power']['max_voltage_V']:.0f} pad={f['adhesion']['pad_area_um2']:.0f}um2")
     return str(state.get("formula", state))
 
 

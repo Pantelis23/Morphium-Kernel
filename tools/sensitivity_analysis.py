@@ -105,6 +105,12 @@ PROCESS_SIGMA = {
         "x_Sc":      0.010,   # ±1% absolute Sc target control (sputtering)
         "dep_temp_C": 15.0,   # ±15°C substrate heater uniformity
     },
+    "M": {   # RELATIVE fractions (foglet knobs span orders of magnitude)
+        "area_um2":      0.03,
+        "gap_nm":        0.08,   # litho/deposition — dominates latch & breakdown
+        "max_voltage_V": 0.02,
+        "pad_area_um2":  0.05,
+    },
 }
 
 # Promotion thresholds (pass/fail for Monte Carlo yield)
@@ -128,6 +134,13 @@ PROMOTION_THRESHOLDS = {
     "EM": {
         "d33_pC_N":        ("ge", 10.0),
         "_sec_phase_risk": ("le", 0.60),   # sec_risk > 0.60 → secondary ScN/Sc2O3 very likely
+    },
+    "M": {
+        "failure_rate_pct":      ("le", 5.0),    # foglet should fail <5% of the time
+        "latch_normal_force_mN": ("ge", 0.1),    # useful-hold floor (>> ug-foglet weight)
+        "payload_ratio":         ("ge", 10.0),   # hold >=10x self-weight
+        "max_speed_mm_s":        ("ge", 1.0),    # useful locomotion
+        "cycle_life":            ("ge", 1e4),    # latch endurance
     },
 }
 
@@ -188,6 +201,9 @@ def extract_metrics(layer, result):
         # Keep _sec_phase_risk (used as MC threshold) but drop other internal keys
         return {k: v for k, v in m.items()
                 if (not k.startswith("_") or k == "_sec_phase_risk") and k != "seed"}
+    elif layer == "M":
+        m = result.get("metrics", result)
+        return {k: v for k, v in m.items() if not k.startswith("_") and k != "seed"}
     return result
 
 
@@ -470,6 +486,22 @@ def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0,
             T_new = state.get("dep_temp_C", 473.0) + random.gauss(0, sigmas.get("dep_temp_C", 15.0) * sigma_scale)
             s = {"formula": new_formula, "substrate": state.get("substrate", "Al2O3"),
                  "dep_temp_C": T_new, "seed": seed}
+
+        elif layer == "M":
+            # Foglet design: perturb electrode area/gap, drive voltage, pad area
+            # (relative sigmas). Nested foglet state; stack metrics passed through.
+            f = state["foglet"]
+            eg = f["latching"]["electrode_geometry"]
+            area = max(eg["area_um2"] * (1 + random.gauss(0, sigmas.get("area_um2", 0.03) * sigma_scale)), 1.0)
+            gap  = max(eg["gap_nm"]   * (1 + random.gauss(0, sigmas.get("gap_nm", 0.08) * sigma_scale)), 1.0)
+            volt = max(f["power"]["max_voltage_V"] * (1 + random.gauss(0, sigmas.get("max_voltage_V", 0.02) * sigma_scale)), 0.1)
+            pad  = max(f["adhesion"]["pad_area_um2"] * (1 + random.gauss(0, sigmas.get("pad_area_um2", 0.05) * sigma_scale)), 1.0)
+            s = {"foglet": {**f,
+                            "latching": {**f["latching"],
+                                         "electrode_geometry": {"area_um2": area, "gap_nm": gap}},
+                            "power":    {**f["power"], "max_voltage_V": volt},
+                            "adhesion": {**f["adhesion"], "pad_area_um2": pad}},
+                 "stack": state.get("stack", {}), "seed": seed}
 
         else:
             s = {**state, "seed": seed}
