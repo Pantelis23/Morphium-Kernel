@@ -94,11 +94,17 @@ def _ga_min_ga_fraction():
 # mutated states so the invariant holds everywhere (single source of truth):
 #   - Ga >= 0.20  : amorphous-stability requirement (was enforced incorrectly in
 #                   mutate_L — the old deficit math under-shot, landing ~0.167).
-#   - Zn >= 0.05  : keep it a genuine In-Ga-Zn oxide; without a floor the search
-#                   drove Zn -> 0.001 (i.e. In-Ga-O, not IGZO).
+#   - Zn >= 0.10  : keep it a genuine In-Ga-Zn oxide. Set from a literature review
+#                   (2026-06-03): industrial IGZO sputter-target specs bound the
+#                   window at 0.10 <= Zn/(In+Ga+Zn) <= 0.45; the PEALD optimal
+#                   region is X_Zn 0.17-0.34 (Hong 2023, Adv. Electron. Mater.);
+#                   zero-Zn In-Ga-O fails to give reproducible/uniform TFTs
+#                   (Hong 2023; Nomura/Hosono 2010, Sci. Technol. Adv. Mater. 11
+#                   044305). 0.10 is the conservative floor (accept range 0.08-0.12);
+#                   do NOT go below 0.08. (Was 0.05 — too low, pre-review guess.)
 #   - In >= 0.05  : avoid a degenerate (In-free) cation sublattice.
-# Floors sum to 0.30 < 1.0, so they are always jointly feasible.
-L_CATION_FLOORS = {"In": 0.05, "Ga": 0.20, "Zn": 0.05}
+# Floors sum to 0.35 < 1.0, so they are always jointly feasible.
+L_CATION_FLOORS = {"In": 0.05, "Ga": 0.20, "Zn": 0.10}
 
 
 def _enforce_L_cation_floors(comp):
