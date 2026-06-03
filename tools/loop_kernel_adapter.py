@@ -379,39 +379,47 @@ def tournament_select(population_with_scores, k=3):
 
 def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
                robust=False, mc_samples=64, model_risk=False, pareto=False,
-               pareto_out=None):
+               pareto_out=None, quiet=False, commit=True):
+    """Run the GA search. Returns the champion dict
+    {state, yield_process, yield_model, score, n_promoted} (or None on error).
+    quiet suppresses console output; commit=False skips ledger writes (so other
+    tools, e.g. the M stack-yield model, can reuse the search without polluting
+    ledger/trials.ndjson)."""
     if layer not in GENERATORS:
         supported = ", ".join(GENERATORS.keys())
-        print(f"Error: Layer {layer!r} not supported. Supported: {supported}")
-        return
+        if not quiet:
+            print(f"Error: Layer {layer!r} not supported. Supported: {supported}")
+        return None
     # Model risk is a property of the yield estimate, so it only means anything
     # in yield (robust) mode — turning it on implies robust. The Pareto front is
     # a (yield, perf) tradeoff, so it needs yields too — --pareto implies robust.
     if model_risk or pareto:
         robust = True
     if robust and _mc_yield is None:
-        print("Error: --robust requested but sensitivity_analysis.run_monte_carlo "
-              "could not be imported.")
-        return
+        if not quiet:
+            print("Error: --robust requested but sensitivity_analysis.run_monte_carlo "
+                  "could not be imported.")
+        return None
 
     # model_sigma_scale flows into every Monte-Carlo call below; 0 = process-only.
     model_scale = 1.0 if model_risk else 0.0
 
-    obj = f"ROBUST (fab-yield, {mc_samples} MC/candidate)" if robust else "PEAK (nominal metric)"
-    print(f"\nStarting GA Search: Layer={layer}, Budget={budget}, Pop={pop_size}")
-    print(f"Objective: {obj}")
-    if model_risk:
-        if _model_unc is not None:
-            unc, status = _model_unc(kc, layer)
-            tag = "UNCALIBRATED" if status in ("uncalibrated", "absent") else status
-            print(f"Model-risk: ON  (layer {layer} trust: {tag}, "
-                  f"±{unc*100:.0f}% metric uncertainty folded into yield)")
-            if status in ("uncalibrated", "absent"):
-                print(f"  ⚠ {layer} has NO sim-to-real calibration — its yield is a "
-                      f"model-internal guess, not validated fab risk.")
-        else:
-            print("Model-risk: ON")
-    print(f"{'─'*60}")
+    if not quiet:
+        obj = f"ROBUST (fab-yield, {mc_samples} MC/candidate)" if robust else "PEAK (nominal metric)"
+        print(f"\nStarting GA Search: Layer={layer}, Budget={budget}, Pop={pop_size}")
+        print(f"Objective: {obj}")
+        if model_risk:
+            if _model_unc is not None:
+                unc, status = _model_unc(kc, layer)
+                tag = "UNCALIBRATED" if status in ("uncalibrated", "absent") else status
+                print(f"Model-risk: ON  (layer {layer} trust: {tag}, "
+                      f"±{unc*100:.0f}% metric uncertainty folded into yield)")
+                if status in ("uncalibrated", "absent"):
+                    print(f"  ⚠ {layer} has NO sim-to-real calibration — its yield is a "
+                          f"model-internal guess, not validated fab risk.")
+            else:
+                print("Model-risk: ON")
+        print(f"{'─'*60}")
 
     contract = kc.contract(layer)
     generator = GENERATORS[layer]
@@ -494,15 +502,18 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
             "nominal_score": nominal_score,
             "yield": yld,
         }
-        kc.commit_trial(trial_entry)
+        if commit:
+            kc.commit_trial(trial_entry)
 
         # Promote if passes thresholds
         if kc.passes_thresholds(layer, metrics):
             n_promoted += 1
-            recipe_entry = {**trial_entry, "promoted_at_trial": i}
-            kc.commit_recipe(recipe_entry)
-            print(f"  [{i:4d}] PROMOTED! Score={score:.2f}  "
-                  f"(total promotions: {n_promoted})")
+            if commit:
+                recipe_entry = {**trial_entry, "promoted_at_trial": i}
+                kc.commit_recipe(recipe_entry)
+            if not quiet:
+                print(f"  [{i:4d}] PROMOTED! Score={score:.2f}  "
+                      f"(total promotions: {n_promoted})")
 
         # Update best
         if score > best_score:
@@ -510,9 +521,10 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
             best_state = candidate_state
             best_trial = i
             best_yield = yld
-            summary = _format_best(layer, metrics, nominal_score)
-            ytxt = f" yield={yld*100:5.1f}% |" if yld is not None else ""
-            print(f"  [{i:4d}] ★ New Best:{ytxt} {summary}")
+            if not quiet:
+                summary = _format_best(layer, metrics, nominal_score)
+                ytxt = f" yield={yld*100:5.1f}% |" if yld is not None else ""
+                print(f"  [{i:4d}] ★ New Best:{ytxt} {summary}")
 
         # Update population (keep best pop_size candidates)
         # Replace worst if population full
@@ -524,12 +536,13 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
                 population[worst_idx] = (candidate_state, score)
 
         # Progress report every 50 trials
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 50 == 0 and not quiet:
             print(f"  [{i+1:4d}/{budget}] Best so far: score={best_score:.2f} "
                   f"at trial {best_trial}, promotions={n_promoted}")
 
-    print(f"\n{'─'*60}")
-    print(f"Search complete: {budget} trials, {n_promoted} promotions")
+    if not quiet:
+        print(f"\n{'─'*60}")
+        print(f"Search complete: {budget} trials, {n_promoted} promotions")
 
     # Validate the champion's yield at high MC resolution. With --model-risk we
     # report BOTH process-only (fab variation alone) and process+model (also
@@ -545,20 +558,25 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
         except Exception:
             champ_yield = champ_yield_model = None
 
-    if champ_yield is not None and champ_yield_model is not None:
-        ytxt = (f", fab-yield(2000 MC)={champ_yield*100:.1f}% process-only / "
-                f"{champ_yield_model*100:.1f}% process+model")
-    elif champ_yield is not None:
-        ytxt = f", fab-yield(2000 MC)={champ_yield*100:.1f}%"
-    else:
-        ytxt = ""
-    print(f"Best state (trial {best_trial}, score={best_score:.2f}{ytxt}):")
-    print(json.dumps(best_state, indent=2))
+    if not quiet:
+        if champ_yield is not None and champ_yield_model is not None:
+            ytxt = (f", fab-yield(2000 MC)={champ_yield*100:.1f}% process-only / "
+                    f"{champ_yield_model*100:.1f}% process+model")
+        elif champ_yield is not None:
+            ytxt = f", fab-yield(2000 MC)={champ_yield*100:.1f}%"
+        else:
+            ytxt = ""
+        print(f"Best state (trial {best_trial}, score={best_score:.2f}{ytxt}):")
+        print(json.dumps(best_state, indent=2))
 
-    # Yield-vs-performance Pareto front (the champion above is just its
-    # max-yield endpoint; the knee is usually the better engineering pick).
-    if pareto:
-        report_pareto(layer, pareto_points, model_risk, out_path=pareto_out)
+        # Yield-vs-performance Pareto front (the champion above is just its
+        # max-yield endpoint; the knee is usually the better engineering pick).
+        if pareto:
+            report_pareto(layer, pareto_points, model_risk, out_path=pareto_out)
+
+    return {"state": best_state, "yield_process": champ_yield,
+            "yield_model": champ_yield_model, "score": best_score,
+            "n_promoted": n_promoted}
 
 
 def _format_best(layer, metrics, score):

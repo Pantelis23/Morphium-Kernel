@@ -39,7 +39,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.morphium_kernel.kernel import KernelClient
-from sensitivity_analysis import run_monte_carlo, CHAMPIONS, model_uncertainty_for
+from sensitivity_analysis import run_monte_carlo, model_uncertainty_for
+from loop_kernel_adapter import run_search
+
+
+def _recipe(layer, state):
+    """Compact champion recipe for display."""
+    if layer == "L":
+        comp = state["materials"]["channel_composition"]
+        cats = {k: v for k, v in comp.items() if k != "O"}
+        t = sum(cats.values()) or 1.0
+        return "cation " + " ".join(f"{k}={v/t:.2f}" for k, v in cats.items())
+    return str(state.get("formula", ""))
 
 # Canonical M foglet champion (HfO2:DLC shell) — from layers/M/api.py example.
 M_CHAMPION = {
@@ -108,6 +119,10 @@ def main():
     ap.add_argument("--model-risk", action="store_true", dest="model_risk",
                     help="Fold per-layer simulator uncertainty (phi.json) into every yield.")
     ap.add_argument("--mc", type=int, default=2000, help="MC samples per layer (default 2000)")
+    ap.add_argument("--search-budget", type=int, default=120, dest="search_budget",
+                    help="GA budget for finding each sub-layer's current champion (default 120)")
+    ap.add_argument("--search-mc", type=int, default=48, dest="search_mc",
+                    help="MC samples/candidate during champion search (default 48)")
     args = ap.parse_args()
     random.seed(7)
 
@@ -115,12 +130,20 @@ def main():
     ms = 1.0 if args.model_risk else 0.0
     ytag = "process+model" if args.model_risk else "process-only"
 
-    # E/EM/PM model-aware champion yields (the stack M depends on).
-    subs = {}
+    # Find each sub-layer's CURRENT champion via a live robust+model-risk search
+    # (commit=False so the ledger stays clean), then evaluate its yield in the
+    # requested mode. This reflects the engine's current calibration/constraints
+    # rather than a stale stored dict.
+    print("Finding current robust+calibrated champions (live search, "
+          f"budget={args.search_budget})...", flush=True)
+    subs, recipes = {}, {}
     for layer in ("E", "EM", "PM"):
-        y, _ = run_monte_carlo(kc, layer, CHAMPIONS[layer],
-                               n_samples=args.mc, model_sigma_scale=ms)
+        champ = run_search(layer, args.search_budget, kc, robust=True, model_risk=True,
+                           mc_samples=args.search_mc, quiet=True, commit=False)
+        state = champ["state"]
+        y, _ = run_monte_carlo(kc, layer, state, n_samples=args.mc, model_sigma_scale=ms)
         subs[layer] = y
+        recipes[layer] = _recipe(layer, state)
 
     fog, fog_fail = foglet_yield(kc, M_CHAMPION, n=args.mc, model_scale=ms)
 
@@ -140,13 +163,11 @@ def main():
     print(f"  MORPHIUM-M COMPOSITE STACK YIELD   (yield axis = {ytag})")
     print(f"  {args.mc} MC samples/layer; sub-layers assumed independent")
     print(f"{'='*64}")
-    print(f"  Sub-layer champions: legacy CHAMPIONS dict (sensitivity_analysis).")
-    print(f"  Robust/calibrated champions from --robust search yield higher —")
-    print(f"  swapping them in raises the bottleneck and the whole stack.\n")
+    print(f"  Sub-layer champions: CURRENT robust+calibrated (live search).\n")
     print(f"  Stack = M-foglet x E x EM x PM  (M requires E/EM/PM per contract)\n")
-    print(f"    {'E   (HZO ferro)':<22} {subs['E']*100:6.1f}%")
-    print(f"    {'EM  (ScAlN piezo)':<22} {subs['EM']*100:6.1f}%")
-    print(f"    {'PM  (Sb2Se3 photon)':<22} {subs['PM']*100:6.1f}%")
+    print(f"    {'E   (HZO ferro)':<22} {subs['E']*100:6.1f}%   {recipes['E']}")
+    print(f"    {'EM  (ScAlN piezo)':<22} {subs['EM']*100:6.1f}%   {recipes['EM']}")
+    print(f"    {'PM  (Sb2Se3 photon)':<22} {subs['PM']*100:6.1f}%   {recipes['PM']}")
     print(f"    {'M-foglet (mechanics)':<22} {fog*100:6.1f}%   "
           f"[field {field0:.2f} V/nm vs {M_BREAKDOWN_V_PER_NM:.2f} guard; "
           f"fails {fog_fail}]")
