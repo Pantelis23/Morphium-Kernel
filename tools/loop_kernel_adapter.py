@@ -372,14 +372,16 @@ def tournament_select(population_with_scores, k=3):
 # ---------------------------------------------------------------------------
 
 def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
-               robust=False, mc_samples=64, model_risk=False):
+               robust=False, mc_samples=64, model_risk=False, pareto=False,
+               pareto_out=None):
     if layer not in GENERATORS:
         supported = ", ".join(GENERATORS.keys())
         print(f"Error: Layer {layer!r} not supported. Supported: {supported}")
         return
     # Model risk is a property of the yield estimate, so it only means anything
-    # in yield (robust) mode — turning it on implies robust.
-    if model_risk:
+    # in yield (robust) mode — turning it on implies robust. The Pareto front is
+    # a (yield, perf) tradeoff, so it needs yields too — --pareto implies robust.
+    if model_risk or pareto:
         robust = True
     if robust and _mc_yield is None:
         print("Error: --robust requested but sensitivity_analysis.run_monte_carlo "
@@ -417,6 +419,7 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
     best_trial  = 0
     best_yield  = None
     n_promoted  = 0
+    pareto_points = []   # accumulates (perf, yield, state) per candidate when pareto
 
     for i in range(budget):
         # Annealing step size: starts large (exploration), shrinks (exploitation)
@@ -424,7 +427,17 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
         step_size = step_start + (step_end - step_start) * progress
 
         # Select candidate
-        if i < pop_size:
+        if pareto:
+            # Mapping the front needs COVERAGE, not convergence. The yield-
+            # maximising GA collapses onto one corner, so for --pareto we sample
+            # the (constrained) design space broadly instead: ~70% fresh random
+            # draws, ~30% light mutations of seen points to fill local gaps.
+            if i < pop_size or random.random() < 0.7:
+                candidate_state = generator()
+            else:
+                parent = random.choice(population)[0]
+                candidate_state = mutator(parent, step=step_start)
+        elif i < pop_size:
             # Burn in: evaluate initial population first
             candidate_state = population[i][0]
         else:
@@ -454,6 +467,14 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
         else:
             yld = None
             score = nominal_score
+
+        # Accumulate the (performance, yield) point for the Pareto front.
+        if pareto and yld is not None:
+            perf_key = PERF_METRIC.get(layer, (None,))[0]
+            perf_val = metrics.get(perf_key) if perf_key else None
+            if isinstance(perf_val, (int, float)):
+                pareto_points.append({"perf": float(perf_val), "yield": yld,
+                                      "state": candidate_state})
 
         # Log trial
         trial_entry = {
@@ -528,6 +549,11 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
     print(f"Best state (trial {best_trial}, score={best_score:.2f}{ytxt}):")
     print(json.dumps(best_state, indent=2))
 
+    # Yield-vs-performance Pareto front (the champion above is just its
+    # max-yield endpoint; the knee is usually the better engineering pick).
+    if pareto:
+        report_pareto(layer, pareto_points, model_risk, out_path=pareto_out)
+
 
 def _format_best(layer, metrics, score):
     """One-line metric summary for progress output."""
@@ -553,6 +579,115 @@ def _format_best(layer, metrics, score):
         return f"score={score:.2f} d33={d33:.2f} kt2={kt2:.2f}% stab={stab:.3f}"
     else:
         return f"score={score:.2f}"
+
+
+# ---------------------------------------------------------------------------
+# Yield-vs-performance Pareto front
+# ---------------------------------------------------------------------------
+# The robust search collapses the tradeoff to ONE backed-off champion. --pareto
+# instead reports the non-dominated frontier of (fab-yield, performance) over
+# every candidate the search evaluated, so you pick the operating point per
+# layer. The yield axis is whatever the run used (process-only, or the honest
+# process+model yield under --model-risk); the perf axis is the layer's headline
+# physical metric below (already phi-calibrated, since it comes from simulate()).
+
+PERF_METRIC = {
+    "L":  ("mobility_cm2_Vs",     "mobility cm2/Vs"),
+    "PM": ("fom",                 "FOM (dn/k)"),
+    "E":  ("polarization_uC_cm2", "Pr uC/cm2"),
+    "EM": ("d33_pC_N",            "d33 pC/N"),
+}
+
+
+def _recipe_str(layer, state):
+    """Compact one-line recipe for a candidate state."""
+    if layer == "L":
+        comp = state["materials"]["channel_composition"]
+        cats = {k: v for k, v in comp.items() if k != "O"}
+        t = sum(cats.values()) or 1.0
+        return "IGZO cation " + " ".join(f"{k}={v/t:.3f}" for k, v in cats.items())
+    return str(state.get("formula", state))
+
+
+def _pareto_front(points):
+    """points: list of {'perf','yield','state'}. Return (front, knee) maximising
+    BOTH perf and yield. knee = the elbow: the front point with the greatest
+    perpendicular distance from the chord joining the two yield-extreme ends."""
+    pts = [p for p in points if p.get("yield") is not None and p.get("perf") is not None]
+    front = []
+    for p in pts:
+        dominated = any(
+            q["perf"] >= p["perf"] and q["yield"] >= p["yield"]
+            and (q["perf"] > p["perf"] or q["yield"] > p["yield"])
+            for q in pts)
+        if not dominated:
+            front.append(p)
+    # sort + dedupe near-identical (yield, perf)
+    front.sort(key=lambda p: (p["yield"], p["perf"]))
+    uniq = []
+    for p in front:
+        if (not uniq or abs(p["yield"] - uniq[-1]["yield"]) > 1e-4
+                or abs(p["perf"] - uniq[-1]["perf"]) > 1e-6):
+            uniq.append(p)
+    front = uniq
+    if not front:
+        return front, None
+    ys = [p["yield"] for p in front]
+    ps = [p["perf"] for p in front]
+    ymin, ymax, pmin, pmax = min(ys), max(ys), min(ps), max(ps)
+
+    def _n(p):
+        yn = (p["yield"] - ymin) / (ymax - ymin) if ymax > ymin else 0.0
+        pn = (p["perf"] - pmin) / (pmax - pmin) if pmax > pmin else 0.0
+        return yn, pn
+
+    # Elbow: max perpendicular distance from the chord between the yield extremes.
+    # (Distance numerator only — the chord length is constant, so it doesn't
+    # affect the argmax — which avoids needing math.sqrt.) Closest-to-utopia ties
+    # at the corners on a near-linear front; this picks the interior bulge.
+    ax, ay = _n(min(front, key=lambda p: p["yield"]))
+    bx, by = _n(max(front, key=lambda p: p["yield"]))
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        knee = max(front, key=lambda p: p["yield"])
+    else:
+        def _perp_num(p):
+            x, y = _n(p)
+            return abs(dx * (ay - y) - (ax - x) * dy)
+        knee = max(front, key=_perp_num)
+    return front, knee
+
+
+def report_pareto(layer, points, model_risk, out_path=None):
+    """Print the yield-vs-performance Pareto front and optionally dump JSON."""
+    front, knee = _pareto_front(points)
+    perf_key, perf_label = PERF_METRIC.get(layer, ("score", "score"))
+    ytag = "process+model" if model_risk else "process-only"
+    print(f"\n{'='*70}")
+    print(f"  YIELD vs PERFORMANCE PARETO FRONT — Layer {layer}")
+    print(f"  yield axis = {ytag} fab-yield    perf axis = {perf_label}")
+    print(f"  {len(points)} candidates evaluated, {len(front)} on the front")
+    print(f"{'='*70}")
+    if not front:
+        print("  (no valid (yield, perf) points — was --robust on?)")
+        return
+    print(f"  {'yield%':>7}  {perf_label:>16}   recipe")
+    for p in sorted(front, key=lambda p: -p["yield"]):
+        tag = "   <== KNEE (best balance)" if p is knee else ""
+        print(f"  {p['yield']*100:7.1f}  {p['perf']:16.3f}   {_recipe_str(layer, p['state'])}{tag}")
+    if knee is not None:
+        print(f"\n  Knee pick: yield={knee['yield']*100:.1f}%, "
+              f"{perf_label}={knee['perf']:.3f}")
+    if out_path:
+        try:
+            with open(out_path, "w") as f:
+                json.dump({"layer": layer, "yield_axis": ytag, "perf_metric": perf_key,
+                           "front": [{"yield": p["yield"], "perf": p["perf"],
+                                      "state": p["state"], "knee": p is knee}
+                                     for p in front]}, f, indent=2)
+            print(f"  Wrote front to {out_path}")
+        except Exception as e:
+            print(f"  (could not write {out_path}: {e})")
 
 
 # ---------------------------------------------------------------------------
@@ -583,6 +718,13 @@ if __name__ == "__main__":
                         help="Also fold per-layer MODEL (epistemic) uncertainty from "
                              "phi.json into the yield (implies --robust). Penalises "
                              "recipes that look safe only on poorly/un-calibrated sims.")
+    parser.add_argument("--pareto", action="store_true",
+                        help="Report the non-dominated yield-vs-performance frontier "
+                             "over all evaluated candidates (implies --robust), and "
+                             "flag the knee. Combine with --model-risk for an honest "
+                             "yield axis. Use a larger --budget for a richer front.")
+    parser.add_argument("--pareto-out", default=None, dest="pareto_out",
+                        help="Write the Pareto front to this JSON path (for plotting).")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -590,4 +732,5 @@ if __name__ == "__main__":
     kc = KernelClient(project_root=args.root)
     run_search(args.layer, args.budget, kc, pop_size=args.pop,
                robust=args.robust, mc_samples=args.mc_samples,
-               model_risk=args.model_risk)
+               model_risk=args.model_risk, pareto=args.pareto,
+               pareto_out=args.pareto_out)
