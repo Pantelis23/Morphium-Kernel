@@ -128,6 +128,44 @@ PROMOTION_THRESHOLDS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Model (epistemic) uncertainty — how much do we trust the SIMULATOR itself?
+# ---------------------------------------------------------------------------
+# PROCESS_SIGMA (above) answers "will it survive fab variation?". Model noise
+# answers the orthogonal question "is the simulator even telling the truth?".
+# Per-layer trust is hand-recorded in config/phi.json (_calibration_status,
+# _uncertainty_pct). A recipe that looks 100% safe on an *uncalibrated* model
+# is risk-UNKNOWN, not risk-free — folding this in stops the search from
+# trusting sim regions that were never checked against reality.
+
+# Assumed relative metric uncertainty for layers phi.json marks "uncalibrated"
+# (no sim-to-real anchor at all). Deliberately large: we genuinely don't know.
+UNCALIBRATED_MODEL_UNC = 0.40
+
+_PHI_META_CACHE = {}
+
+def model_uncertainty_for(kc, layer):
+    """Return (relative_metric_uncertainty, calibration_status) for a layer.
+
+    Reads config/phi.json trust metadata. Calibrated layers use their recorded
+    _uncertainty_pct; uncalibrated/absent layers fall back to the deliberately
+    large UNCALIBRATED_MODEL_UNC (we genuinely don't know how wrong the sim is).
+    """
+    root = str(getattr(kc, "root", "."))
+    if root not in _PHI_META_CACHE:
+        try:
+            with open(os.path.join(root, "config", "phi.json")) as f:
+                _PHI_META_CACHE[root] = json.load(f)
+        except Exception:
+            _PHI_META_CACHE[root] = {}
+    meta = _PHI_META_CACHE[root].get(layer, {})
+    status = meta.get("_calibration_status", "absent")
+    unc_pct = meta.get("_uncertainty_pct")
+    if unc_pct is not None:
+        return float(unc_pct) / 100.0, status
+    return UNCALIBRATED_MODEL_UNC, status
+
+
 def extract_metrics(layer, result):
     """Flatten layer-specific result dict to a simple metric dict."""
     if layer == "L":
@@ -355,14 +393,27 @@ def print_jacobian(layer, base_metrics, jacobian):
 # 2. Monte Carlo Yield Prediction
 # ---------------------------------------------------------------------------
 
-def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0):
+def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0,
+                    model_sigma_scale=0.0):
     """
     Sample n_samples perturbed states from a Gaussian around the champion.
     Returns (yield_fraction, failed_metrics_histogram).
+
+    sigma_scale scales PROCESS noise (input-knob fab variation). When
+    model_sigma_scale > 0, ALSO perturbs the simulated output metrics by the
+    layer's MODEL (epistemic) uncertainty from phi.json — so a sample must
+    survive both fab variation AND possible simulator error to count as a pass.
+    model_sigma_scale=0 (default) reproduces the original process-only yield.
     """
     sigmas = PROCESS_SIGMA.get(layer, {})
     passed = 0
     fail_counts = {}
+
+    # Resolve model (epistemic) uncertainty once. 0 → disabled (process-only).
+    model_unc = 0.0
+    if model_sigma_scale > 0.0:
+        model_unc, _ = model_uncertainty_for(kc, layer)
+        model_unc *= model_sigma_scale
 
     for trial in range(n_samples):
         seed = 1000 + trial   # deterministic per trial
@@ -422,6 +473,16 @@ def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0):
         try:
             r = kc.simulate(layer, s, seed=seed)
             metrics = extract_metrics(layer, r)
+            if model_unc > 0.0:
+                # Even after phi bias-correction, the TRUE value can differ from
+                # the sim by ~model_unc (relative). Perturb each metric so a
+                # near-threshold candidate on a poorly-trusted model fails more
+                # often — the search then prefers recipes with margin against
+                # simulator error, not just against fab variation.
+                metrics = {k: (v * (1.0 + random.gauss(0, model_unc))
+                               if isinstance(v, (int, float)) and not isinstance(v, bool)
+                               else v)
+                           for k, v in metrics.items()}
             if passes_thresholds(layer, metrics):
                 passed += 1
             else:

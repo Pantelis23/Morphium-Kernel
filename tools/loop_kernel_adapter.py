@@ -39,9 +39,11 @@ from src.morphium_kernel.kernel import KernelClient
 # already implemented in sensitivity_analysis.py. Imported here so the search can
 # optimise for *fabrication yield* directly instead of peak nominal metrics.
 try:
-    from sensitivity_analysis import run_monte_carlo as _mc_yield
+    from sensitivity_analysis import (run_monte_carlo as _mc_yield,
+                                       model_uncertainty_for as _model_unc)
 except Exception:  # pragma: no cover - peak mode must work even if this fails
     _mc_yield = None
+    _model_unc = None
 
 
 # ---------------------------------------------------------------------------
@@ -334,19 +336,37 @@ def tournament_select(population_with_scores, k=3):
 # ---------------------------------------------------------------------------
 
 def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
-               robust=False, mc_samples=64):
+               robust=False, mc_samples=64, model_risk=False):
     if layer not in GENERATORS:
         supported = ", ".join(GENERATORS.keys())
         print(f"Error: Layer {layer!r} not supported. Supported: {supported}")
         return
+    # Model risk is a property of the yield estimate, so it only means anything
+    # in yield (robust) mode — turning it on implies robust.
+    if model_risk:
+        robust = True
     if robust and _mc_yield is None:
         print("Error: --robust requested but sensitivity_analysis.run_monte_carlo "
               "could not be imported.")
         return
 
+    # model_sigma_scale flows into every Monte-Carlo call below; 0 = process-only.
+    model_scale = 1.0 if model_risk else 0.0
+
     obj = f"ROBUST (fab-yield, {mc_samples} MC/candidate)" if robust else "PEAK (nominal metric)"
     print(f"\nStarting GA Search: Layer={layer}, Budget={budget}, Pop={pop_size}")
     print(f"Objective: {obj}")
+    if model_risk:
+        if _model_unc is not None:
+            unc, status = _model_unc(kc, layer)
+            tag = "UNCALIBRATED" if status in ("uncalibrated", "absent") else status
+            print(f"Model-risk: ON  (layer {layer} trust: {tag}, "
+                  f"±{unc*100:.0f}% metric uncertainty folded into yield)")
+            if status in ("uncalibrated", "absent"):
+                print(f"  ⚠ {layer} has NO sim-to-real calibration — its yield is a "
+                      f"model-internal guess, not validated fab risk.")
+        else:
+            print("Model-risk: ON")
     print(f"{'─'*60}")
 
     contract = kc.contract(layer)
@@ -392,7 +412,8 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
         # peaks that look great nominally but fail most real devices.
         nominal_score = ga_score(kc, layer, metrics)
         if robust:
-            yld, _ = _mc_yield(kc, layer, candidate_state, n_samples=mc_samples)
+            yld, _ = _mc_yield(kc, layer, candidate_state, n_samples=mc_samples,
+                               model_sigma_scale=model_scale)
             score = yld + 1e-6 * nominal_score
         else:
             yld = None
@@ -447,16 +468,27 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
     print(f"\n{'─'*60}")
     print(f"Search complete: {budget} trials, {n_promoted} promotions")
 
-    # Validate the champion's fabrication yield at high MC resolution (works for
-    # both objectives — shows the *real* fab robustness of whatever was found).
-    champ_yield = None
+    # Validate the champion's yield at high MC resolution. With --model-risk we
+    # report BOTH process-only (fab variation alone) and process+model (also
+    # folding simulator uncertainty) so the gap between "looks safe" and
+    # "trustworthy" is explicit.
+    champ_yield = champ_yield_model = None
     if best_state is not None and _mc_yield is not None and layer in ("L", "PM", "E", "EM"):
         try:
             champ_yield, _ = _mc_yield(kc, layer, best_state, n_samples=2000)
+            if model_risk:
+                champ_yield_model, _ = _mc_yield(kc, layer, best_state, n_samples=2000,
+                                                 model_sigma_scale=1.0)
         except Exception:
-            champ_yield = None
+            champ_yield = champ_yield_model = None
 
-    ytxt = f", fab-yield(2000 MC)={champ_yield*100:.1f}%" if champ_yield is not None else ""
+    if champ_yield is not None and champ_yield_model is not None:
+        ytxt = (f", fab-yield(2000 MC)={champ_yield*100:.1f}% process-only / "
+                f"{champ_yield_model*100:.1f}% process+model")
+    elif champ_yield is not None:
+        ytxt = f", fab-yield(2000 MC)={champ_yield*100:.1f}%"
+    else:
+        ytxt = ""
     print(f"Best state (trial {best_trial}, score={best_score:.2f}{ytxt}):")
     print(json.dumps(best_state, indent=2))
 
@@ -511,10 +543,15 @@ if __name__ == "__main__":
     parser.add_argument("--mc-samples", type=int, default=64, dest="mc_samples",
                         help="MC samples per candidate in --robust mode (default: 64). "
                              "Lower = faster search, higher = less noisy yield estimate.")
+    parser.add_argument("--model-risk", action="store_true", dest="model_risk",
+                        help="Also fold per-layer MODEL (epistemic) uncertainty from "
+                             "phi.json into the yield (implies --robust). Penalises "
+                             "recipes that look safe only on poorly/un-calibrated sims.")
     args = parser.parse_args()
 
     random.seed(args.seed)
 
     kc = KernelClient(project_root=args.root)
     run_search(args.layer, args.budget, kc, pop_size=args.pop,
-               robust=args.robust, mc_samples=args.mc_samples)
+               robust=args.robust, mc_samples=args.mc_samples,
+               model_risk=args.model_risk)
