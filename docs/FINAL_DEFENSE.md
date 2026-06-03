@@ -10,8 +10,15 @@ We initially targeted high-mobility Indium-Tin-Zinc-Oxide (ITZO).
 *   **Simulation Result:** Mobility hit >50 cm²/Vs.
 *   **The Catch:** Trap density exploded ($>10^{17} cm^{-3}$), leading to Subthreshold Swing > 2000 mV/dec. The device was a resistor, not a switch.
 *   **Decision:** We reverted to **Indium-Gallium-Zinc-Oxide (IGZO)**.
-*   **New Champion:** `In:0.26 Ga:0.24 Zn:0.02 O:0.46`.
-    *   **Mobility:** 13.1 cm²/Vs (Conservative).
+*   **Conservative design reference:** `In:0.26 Ga:0.24 Zn:0.02 O:0.46` — the
+    model's µ≈13 calibration anchor, used here deliberately as a conservative
+    (worst-case) design value. NOTE (audit 2026-06-03): this composition has
+    cation Zn≈0.05, *below* the literature-justified Zn≥0.10 floor, so it is NOT
+    the recommended fab champion. The floor-compliant champion is In-rich
+    (cation In0.63/Ga0.27/Zn0.10) at µ≈21 cm²/Vs (an extrapolation beyond the
+    1:1:1 calibration); see `docs/CHAMPIONS.md`. The conservative 13.1 below
+    only strengthens the robustness argument.
+    *   **Mobility:** 13.1 cm²/Vs (Conservative reference).
     *   **SS:** 77 mV/dec (Excellent control).
     *   **Yield:** 100% at 10% process drift.
 

@@ -53,7 +53,7 @@
         "_mean_bias_pct": -3.0,
         "_uncertainty_pct": 25.0,
         "_sources": [
-            "Muller et al. 2012 (Nano Lett. 12, 4318, 10.1021/nl302049k): 10 nm Hf0.5Zr0.5O2 TiN/HZO/TiN, Pr~17 uC/cm2 (2Pr~34), k~30",
+            "Muller et al. 2012 (Nano Lett. 12, 4318, 10.1021/nl302049k): ~9 nm (sub-10 nm) Hf0.5Zr0.5O2 TiN/HZO/TiN, Pr~17 uC/cm2 (2Pr~34), k~30",
             "Flexible/ultrathin HZO 2023-2024 (ScienceDirect/Springer): 10 nm 2Pr 28-34 uC/cm2, endurance 1e10-1e11 cycles",
             "TiN/HZO/TiN wake-up (PMC11789571 / PMC10224430): 2Pr 12->28 uC/cm2 after cycling (wake-up not modelled, folded into uncertainty)"
         ],
