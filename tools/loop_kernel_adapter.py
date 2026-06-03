@@ -197,7 +197,9 @@ def generate_random_state_PM():
     cl = round(random.uniform(0.02, 0.15), 4)
 
     parts = [f"Sb{sb}", f"Se{se}", f"Ge{ge}", f"Cl{cl}"]
-    return {"formula": ":".join(parts)}
+    # Device integration is the real cycling-endurance lever (geometry).
+    return {"formula": ":".join(parts),
+            "integration": random.choice(["planar", "encapsulated", "nanostructured"])}
 
 
 def generate_random_state_E():
@@ -326,6 +328,8 @@ def mutate_PM(state, step=0.05):
     parts = [f"{e}{round(v, 4)}" if round(v, 4) != 1.0 else e
              for e, v in raw.items() if v > 0]
     new_state["formula"] = ":".join(parts)
+    if random.random() < 0.15:   # occasionally change device integration (endurance lever)
+        new_state["integration"] = random.choice(["planar", "encapsulated", "nanostructured"])
     return new_state
 
 

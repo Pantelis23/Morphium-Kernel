@@ -359,18 +359,25 @@ class MorphiumSimulatorPM:
         # ----------------------------------------------------------------
         # 9.  Phase-change cycling endurance (RELIABILITY)
         #
-        #     Amorphous<->crystalline switches before failure. Sb2Se3 is a
-        #     high-endurance phase-change material (low mass transport / small
-        #     density contrast vs GST) -> ~1e6-1e9 cycles (Delaney 2021). The
-        #     rigid Ge-Sb-Se glass network resists void/segregation accumulation
-        #     (the dominant end-of-life mechanism), and halogen passivation heals
-        #     vacancy defects; both extend cycle life. Base 1e7.
+        #     RECALIBRATED 2026-06-03 to literature. Sb2Se3 cycling endurance is
+        #     device/GEOMETRY-limited, NOT composition-limited: integrated
+        #     stoichiometric films do ~1e3-1e6 cycles (Fang/Bhaskaran SciAdv 2021
+        #     >4e3; Alam AFM 2024 >2e6), and the demonstrated RECORD is >1e8 via
+        #     NANOSTRUCTURING (Dutta AdvMater 2026) / ~30-67x via encapsulation
+        #     (arXiv:2409.12313). Composition only buys thermal stability -> a
+        #     MODEST cycle gain; Cl's endurance benefit is INFERRED from
+        #     photovoltaic Se-vacancy passivation (NO PCM-endurance data). The
+        #     old base 1e7 / x5 glass / x4 halogen / cap 1e9 over-rewarded
+        #     composition and exceeded the demonstrated record.
         # ----------------------------------------------------------------
-        cyc = 1.0e7
-        if has_Ge and has_Sb and has_Se:
-            cyc *= 5.0                       # glass network resists voids
-        cyc *= (1.0 + 3.0 * passiv_sat)      # halogen heals defects (up to 4x)
-        cycling_endurance = min(cyc, 1.0e9)
+        ge_frac = fracs.get("Ge", 0.0)
+        cyc = 1.0e5                                       # integrated stoich. Sb2Se3 base
+        cyc *= (1.0 + 1.0 * min(ge_frac / 0.05, 1.0))     # Ge glass network: continuous, up to x2
+        cyc *= (1.0 + 1.0 * passiv_sat)                   # Cl passivation: SPECULATIVE, up to x2
+        # Device integration is the REAL endurance lever (geometry/encapsulation).
+        _GEOM = {"planar": 1.0, "encapsulated": 30.0, "nanostructured": 1000.0}
+        cyc *= _GEOM.get(state.get("integration", "planar"), 1.0)
+        cycling_endurance = min(cyc, 1.0e8)               # demonstrated record (Dutta 2026)
 
         return {
             "delta_n":           round(delta_n,  4),

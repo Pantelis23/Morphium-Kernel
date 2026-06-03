@@ -125,6 +125,7 @@ PROMOTION_THRESHOLDS = {
         "fom":     ("ge", 500.0),
         "delta_n": ("ge", 0.30),
         "loss_k":  ("le", 1e-4),
+        "cycling_endurance": ("ge", 1e6),   # push endurance (geometry-driven; was the stack wear cap)
     },
     "E": {
         "polarization_uC_cm2": ("ge", 10.0),
@@ -461,7 +462,8 @@ def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0,
                 f"{e}{round(v, 4)}" if round(v, 4) != 1.0 else e
                 for e, v in new_raw.items()
             )
-            s = {"formula": formula_str, "seed": seed}
+            s = {"formula": formula_str, "seed": seed,
+                 "integration": state.get("integration", "planar")}
 
         elif layer == "E":
             import re
