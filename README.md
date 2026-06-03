@@ -2,7 +2,7 @@
 
 <p align="center">
   <em>A post-silicon material platform for reconfigurable computing.</em><br/>
-  <sub>Layer contracts &middot; physics simulators &middot; cryptographically-verified champion recipes.</sub>
+  <sub>Layer contracts &middot; physics simulators &middot; reproducible, literature-calibrated champion recipes (simulation).</sub>
 </p>
 
 <p align="center">
@@ -27,17 +27,19 @@
 
 **Morphium** is a unified material platform that replaces the fragmented stack of modern computing (Silicon Logic + DRAM + Flash + PCB + Display + Case) with a single monolithic, reconfigurable substrate. This repository ships the **executable artifacts** behind that claim: layer contracts, physics simulators, an immutable discovery ledger, and a cryptographic gatekeeper that verifies the champion materials against the kernel.
 
-> Every champion in `artifacts/GOLDEN_IMAGE.json` is reproducible from `ledger/recipes.ndjson` via `tools/gatekeeper.py`. Nothing is hand-tuned — if the gatekeeper does not bless it, it is not a champion.
+> Every champion in `artifacts/GOLDEN_IMAGE.json` is reproducible from `ledger/recipes.ndjson` via `tools/gatekeeper.py`. Champions are GA/Monte-Carlo *search* outputs — not hand-picked — but the underlying physics models are **calibrated to published literature** (the calibration constants in `config/phi.json` are literature-anchored). The gatekeeper guarantees *reproducibility and threshold-compliance in simulation*, **not** physical correctness. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
 
 ## The Stack
 
-| Layer  | Function          | Material            | Key Metric                        |
-| :----: | :---------------- | :------------------ | :-------------------------------- |
-| **E**  | Logic / Memory    | `Hf0.5Zr0.5O2`      | Non-volatile, W-bit FTJ           |
-| **EM** | Actuation         | `Sc0.38Al0.62N`     | Piezo $d_{33} \approx 18$ pC/N    |
-| **PM** | Photonics         | `Sb2Se3:Ge:Cl`      | Phase-change FOM $> 1{,}700$      |
-| **L**  | Oxide Logic       | `IGZO`              | Mobility $\mu > 10$ cm²/V·s       |
-| **M**  | Modular / Foglet  | `HfO2:DLC`          | Electrostatic latch, 551 mN       |
+| Layer  | Function          | Material                  | Key Metric (simulation, lit-calibrated) |
+| :----: | :---------------- | :------------------------ | :-------------------------------------- |
+| **E**  | Logic / Memory    | `Hf0.49Zr0.49Al0.02O2`    | Pr $\approx 17.6$ µC/cm² (FTJ)          |
+| **EM** | Actuation         | `Sc0.34Al0.66N`           | Piezo $d_{33} \approx 22$ pC/N          |
+| **PM** | Photonics         | `Sb2Se3:Ge:Cl`            | Phase-change $\Delta n \approx 0.75$, low-loss |
+| **L**  | Oxide Logic       | `IGZO` (In-rich)          | Mobility $\mu \approx 21$ cm²/V·s        |
+| **M**  | Modular / Foglet  | `HfO2:DLC` (composite)    | Foglet; mechanical latch (needs E/EM/PM) |
+
+> **Status & data honesty.** These are **simulation** results from literature-calibrated physics models — **not lab measurements.** "Verified"/"blessed" here means the gatekeeper *reproducibly* re-derives a champion from the ledger and it passes the contract thresholds — a **reproducibility** guarantee, not a physical one. Per-layer trust varies (calibrated → literature-grounded → heuristic); see [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md) for the trust level behind **every** number, and [`docs/AUDIT_2026-06-03.md`](docs/AUDIT_2026-06-03.md) for the adversarial audit that corrected several of them.
 
 See [`docs/CHAMPIONS.md`](docs/CHAMPIONS.md) for the full champion table and [`papers/MORPHIUM_MASTER_PAPER.md`](papers/MORPHIUM_MASTER_PAPER.md) for the full physics write-up.
 
@@ -95,7 +97,7 @@ python3 tools/stress_test.py --layer EM
 ├── config/                # phi calibration constants
 ├── papers/                # Master paper, recipes, cost analysis
 ├── docs/                  # Architecture, risk register, defense, metrology
-├── evidence/              # Verified champion evidence per layer
+├── evidence/              # Champion evidence per layer (simulation)
 ├── hardware/              # Mask sets and latch designs (placeholders)
 ├── lab/                   # Bench scripts, notebooks, raw data (placeholders)
 └── tests/
@@ -106,7 +108,9 @@ python3 tools/stress_test.py --layer EM
 | Document | Purpose |
 | :--- | :--- |
 | [Architecture Freeze](docs/ARCHITECTURE_FREEZE.md)        | Locked design decisions for v1.0 |
-| [Champions](docs/CHAMPIONS.md)                            | Verified state-of-the-art per layer |
+| [Champions](docs/CHAMPIONS.md)                            | Current state-of-the-art per layer (simulation) |
+| [**Data Provenance**](docs/DATA_PROVENANCE.md)            | **Trust level + source behind every number** |
+| [Truthfulness Audit](docs/AUDIT_2026-06-03.md)           | Adversarial audit (2026-06-03) and its corrections |
 | [Risk Register](docs/RISK_REGISTER.md)                    | Known risks and mitigations |
 | [Fabrication Plan](docs/FABRICATION_PLAN.md)              | Path from kernel to silicon |
 | [Metrology Plan](docs/METROLOGY_PLAN.md)                  | Measurement protocols |
