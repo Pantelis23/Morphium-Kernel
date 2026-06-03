@@ -698,6 +698,10 @@ def report_pareto(layer, points, model_risk, out_path=None):
     print(f"  YIELD vs PERFORMANCE PARETO FRONT — Layer {layer}")
     print(f"  yield axis = {ytag} fab-yield    perf axis = {perf_label}")
     print(f"  {len(points)} candidates evaluated, {len(front)} on the front")
+    print(f"  NOTE: front is sampled only within the generator's constrained")
+    print(f"  design window (yield guardrails, e.g. EM x_Sc<=0.38, E anneal<=560C);")
+    print(f"  higher-performance / lower-yield points beyond that window are NOT")
+    print(f"  shown — the perf axis is truncated by design. (audit m-12)")
     print(f"{'='*70}")
     if not front:
         print("  (no valid (yield, perf) points — was --robust on?)")

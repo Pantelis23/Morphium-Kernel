@@ -19,7 +19,9 @@ Physics Models Implemented:
 
        f_thick(t)   : Film thickness window 4–25 nm
                       σ_lo(t−4 nm / 1.5 nm) × σ_hi(−(t−30 nm) / 6 nm)
-                      Very thin (<3 nm): can't crystallize
+                      Very thin: crystallization strongly suppressed (soft
+                      sigmoid, ~50% at 4 nm) — NOT a hard cutoff; FE HZO has
+                      been demonstrated to ~1-1.5 nm (Cheema 2020). (audit m-9)
                       Very thick (>30 nm): reverts to monoclinic
 
        f_anneal(T)  : Sigmoid from 350°C onset
@@ -29,8 +31,8 @@ Physics Models Implemented:
   2. Dopant Effects on f_ortho:
 
      Al (tensile stress → stabilises small-radius orthorhombic):
-       f_ortho ×= (1 + 3.0 × x_Al) for x_Al ≤ 0.06
-       f_ortho ×= exp(−15 × (x_Al − 0.06)) for x_Al > 0.06 (over-doping kills it)
+       f_ortho ×= (1 + 3.0 × x_Al) for x_Al ≤ 0.05
+       f_ortho ×= exp(−15 × (x_Al − 0.05)) for x_Al > 0.05 (over-doping → tet/AFE)
 
      Si (similar mechanism to Al, weaker effect):
        f_ortho ×= (1 + 2.0 × x_Si) for x_Si ≤ 0.04
@@ -223,11 +225,14 @@ class MorphiumSimulatorE:
         f_ortho = F_ORTHO_MAX * f_Zr * f_thick * f_anneal
 
         # 2d. Dopant corrections
-        # Al: linear stabilisation up to 6%, then exponential kill
-        if x_Al <= 0.06:
+        # Al: linear stabilisation up to ~5%, then exponential kill. Onset moved
+        # 6% -> 5% (audit m-8): ~4-5% Al can already drive HZO toward
+        # tetragonal/antiferroelectric (Lomenzo TSF 2016; literature is split,
+        # some show Al still enhancing — hence a soft, not hard, roll-off).
+        if x_Al <= 0.05:
             f_ortho *= (1.0 + 3.0 * x_Al)
         else:
-            f_ortho *= (1.0 + 3.0 * 0.06) * math.exp(-15.0 * (x_Al - 0.06))
+            f_ortho *= (1.0 + 3.0 * 0.05) * math.exp(-15.0 * (x_Al - 0.05))
 
         # Si: weaker Al-like stabiliser
         if x_Si <= 0.04:

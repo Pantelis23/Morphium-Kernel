@@ -17,7 +17,7 @@
         "_notes": "Web-literature check 2026-06-03 (sim-vs-lit at canonical anchor, run in throwaway): sim UNDERPREDICTS baseline mobility (5.71 at 1:1:1 vs 6-9 Nomura / 10-15 modern) and is OPTIMISTIC on subthreshold swing (64 vs ~130 mV/dec real). Ioff ok (3.7e-13 vs ~1e-13). Modest +offsets applied; uncertainty kept HIGH at 40% because literature mobility genuinely spans 6->50 cm2/Vs (strong composition/process dependence) -- L remains the least-trustworthy sim and the data confirms it. crystallization_risk has no direct measurement (a-IGZO amorphous/stable) -> offset 0. Update with in-house Hall mobility + transfer-curve runs.",
         "offsets": {
             "mobility_cm2_Vs": 2.0,
-            "SS_mV_dec": 60.0,
+            "SS_mV_dec": 20.0,
             "crystallization_risk": 0.0
         }
     },

@@ -131,6 +131,11 @@ ELEMENTS = {
 
 # Halogen passivation strengths (relative effectiveness at filling V_Se / V_S)
 # Cl is most effective due to size match with Se-vacancy sites.
+# NOTE (audit m-7): the passivation DIRECTION (halogens reduce Urbach E_U -> lower
+# NIR k) is physically supported, but these relative strengths and the downstream
+# E_U/k reduction magnitudes are first-pass EXTRAPOLATIONS, not directly
+# literature-derived. phi.json flags PM loss_k as upper-bound-only. Refine with
+# ellipsometry of the actual Sb2Se3:Ge:Cl champion film.
 HALOGENS = {
     "Cl": 0.90,
     "Br": 0.70,

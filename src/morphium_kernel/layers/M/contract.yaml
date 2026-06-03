@@ -131,9 +131,9 @@ simulation:
     seed_controls: ["contact_noise", "surface_variation", "adhesion_microstructure"]
   models:
     - name: "electrostatic_latch"
-      notes: "Parallel-plate + fringe correction; includes dielectric breakdown guard."
+      notes: "Parallel-plate, air gap (fringe <1% in the gap<<width regime, not modelled). Dielectric-breakdown guard is applied in the yield model (tools/stack_yield.py), not in this api. (audit m-11)"
     - name: "dry_adhesion"
-      notes: "Empirical + microstructure parameterization; later upgrade to contact mechanics."
+      notes: "vdW intimate-contact limit x real-contact fill x pad-size derating, calibrated to ~110 kPa gecko (Autumn 2002); first-pass, magnitudes to be refined with contact mechanics."
     - name: "swarm_kinematics"
       notes: "Aggregate model first; later discrete-event + collision + path planning."
 

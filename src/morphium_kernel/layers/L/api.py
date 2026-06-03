@@ -273,9 +273,12 @@ class MorphiumSimulatorL:
         # ----------------------------------------------------------------
         I_on  = mu_final * I_ON_SCALE
         I_off = I_OFF_BASE * (N_v_eff ** BETA_OFF) * noise_off
-        I_off = max(I_off, 1e-18)
+        I_off = max(I_off, 1e-13)   # physical a-IGZO floor (audit m-2: was 1e-18)
 
-        SS  = 60.0 * (1.0 + K_SS * math.log10(1.0 + N_v_eff))
+        # Subthreshold swing: 60 mV/dec thermionic limit x interface-trap
+        # non-ideality (1 + Cit/Cox ~ 1.6 -> ~96 mV/dec floor; audit m-1) plus a
+        # bulk-trap (N_v) term. Real a-IGZO SS ~100-200 mV/dec.
+        SS  = 60.0 * (1.6 + K_SS * math.log10(1.0 + N_v_eff))
         Vth = VTH_0 - GAMMA_VTH * math.log10(1.0 + N_v_eff)
 
         delta_Vth_stress = 0.02 * math.log10(1.0 + N_v_eff)
@@ -286,12 +289,13 @@ class MorphiumSimulatorL:
         # 9.  Crystallization risk
         #
         #     IGZO amorphous stability requires sufficient Ga to suppress
-        #     In₂O₃ nanocrystallite nucleation.  Below f_Ga = 0.15 the
-        #     risk is maximum (1.0).  Above 0.40 it decays exponentially.
+        #     In₂O₃ nanocrystallite nucleation. Continuous exponential decay,
+        #     saturating to 1.0 at/below f_Ga = 0.10 (audit m-4: removed the
+        #     discontinuous hard step at f_Ga=0.15). This is an uncalibrated
+        #     Ga-only proxy (ignores Zn/temp/thickness), used only as a soft
+        #     <=0.5 regulariser.
         # ----------------------------------------------------------------
-        cryst_risk = math.exp(-10.0 * max(f_Ga - 0.10, 0.0))
-        if f_Ga < 0.15:
-            cryst_risk = 1.0
+        cryst_risk = min(1.0, math.exp(-10.0 * max(f_Ga - 0.10, 0.0)))
 
         return {
             "mobility_cm2_Vs":           round(mu_final, 3),

@@ -118,7 +118,7 @@ PROMOTION_THRESHOLDS = {
     "PM": {
         "fom":     ("ge", 500.0),
         "delta_n": ("ge", 0.30),
-        "loss_k":  ("le", 0.002),
+        "loss_k":  ("le", 1e-4),
     },
     "E": {
         "polarization_uC_cm2": ("ge", 10.0),

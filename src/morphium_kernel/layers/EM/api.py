@@ -237,6 +237,14 @@ class MorphiumSimulatorEM:
         if dep_temp_C > 450.0:
             sec_phase_risk = min(sec_phase_risk + 0.15 * (dep_temp_C - 450.0) / 150.0, 1.0)
 
+        # Soft pre-cliff derating (audit m-10): secondary-phase (rock-salt AOG)
+        # inclusions in the 0.30-0.41 window reduce the effective piezoresponse
+        # even while f_stab=1.0. Wire sec_phase_risk into d33/kt2 (was diagnostic
+        # only) so the pre-cliff band is not over-optimistic. Modest (<=25%).
+        _precliff = 1.0 - 0.25 * sec_phase_risk
+        d33_eff *= _precliff
+        kt2_pct *= _precliff
+
         # ----------------------------------------------------------------
         # 9.  Seed-controlled deterministic noise
         # ----------------------------------------------------------------

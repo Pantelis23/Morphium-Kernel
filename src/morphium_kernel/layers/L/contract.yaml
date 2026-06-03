@@ -55,8 +55,11 @@ constraints:
     expr: "channel_material in ['IGZO','ITZO']"
 
   - id: "target_mobility_floor"
-    severity: "hard"
-    expr: "metrics.mobility_cm2_Vs >= 50.0"
+    severity: "soft"
+    # Aspirational In-rich/ITZO target. Reconciled with the ACTIVE promotion gate
+    # (mobility >= 10 in PROMOTION_THRESHOLDS); standard a-IGZO is ~10-15, so 50
+    # was an unrealistic hard floor. Demoted to soft. (audit m-3)
+    expr: "metrics.mobility_cm2_Vs >= 10.0"
 
   - id: "low_temp_preference"
     severity: "soft"
