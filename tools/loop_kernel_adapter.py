@@ -90,6 +90,48 @@ def _ga_min_ga_fraction():
     return random.uniform(0.15, 0.45)
 
 
+# Cation-sublattice floors for Layer L (a-IGZO), enforced on BOTH generated and
+# mutated states so the invariant holds everywhere (single source of truth):
+#   - Ga >= 0.20  : amorphous-stability requirement (was enforced incorrectly in
+#                   mutate_L — the old deficit math under-shot, landing ~0.167).
+#   - Zn >= 0.05  : keep it a genuine In-Ga-Zn oxide; without a floor the search
+#                   drove Zn -> 0.001 (i.e. In-Ga-O, not IGZO).
+#   - In >= 0.05  : avoid a degenerate (In-free) cation sublattice.
+# Floors sum to 0.30 < 1.0, so they are always jointly feasible.
+L_CATION_FLOORS = {"In": 0.05, "Ga": 0.20, "Zn": 0.05}
+
+
+def _enforce_L_cation_floors(comp):
+    """Clamp cation fractions to L_CATION_FLOORS (O held fixed). In-place; returns comp.
+
+    Raises any below-floor cation to its floor, then removes the resulting excess
+    from the slack above floors, proportionally. Because the floors sum to 0.30,
+    the excess is always strictly less than the available slack, so no cation is
+    ever pushed back below its floor — one deterministic pass suffices.
+    """
+    cations = {k: comp[k] for k in comp if k != "O"}
+    cat_total = sum(cations.values())
+    if cat_total <= 0:
+        return comp
+    frac = {k: v / cat_total for k, v in cations.items()}
+    f = {k: max(frac.get(k, 0.0), L_CATION_FLOORS.get(k, 0.0)) for k in frac}
+    excess = sum(f.values()) - 1.0
+    if excess > 1e-12:
+        slack = {k: f[k] - L_CATION_FLOORS.get(k, 0.0) for k in f}
+        slack_sum = sum(slack.values())
+        if slack_sum > 0:
+            for k in f:
+                f[k] -= excess * (slack[k] / slack_sum)
+    # back to absolute amounts (cation:O ratio preserved), then renormalize whole
+    for k in cations:
+        comp[k] = f[k] * cat_total
+    total = sum(comp.values())
+    if total > 0:
+        for k in comp:
+            comp[k] /= total
+    return comp
+
+
 def generate_random_state_L():
     """Random IGZO composition with amorphous stability constraint (Ga >= 20%)."""
     # Sample metal fractions with guaranteed Ga >= 20% (raised from 15% for robustness)
@@ -108,15 +150,19 @@ def generate_random_state_L():
     f_O = o_ratio * metal_total
 
     total = metal_total + f_O
+    comp = {
+        "In": f_In / total,
+        "Ga": f_Ga / total,
+        "Zn": f_Zn / total,
+        "O":  f_O  / total,
+    }
+    # Enforce cation floors here too: the raw sampling above can still yield
+    # Ga-cation < 0.20 (e.g. large f_In) or near-zero Zn.
+    _enforce_L_cation_floors(comp)
     return {
         "materials": {
             "channel_material": "IGZO",
-            "channel_composition": {
-                "In": round(f_In / total, 4),
-                "Ga": round(f_Ga / total, 4),
-                "Zn": round(f_Zn / total, 4),
-                "O":  round(f_O  / total, 4),
-            }
+            "channel_composition": {k: round(v, 4) for k, v in comp.items()},
         }
     }
 
@@ -200,7 +246,8 @@ GENERATORS = {
 # ---------------------------------------------------------------------------
 
 def mutate_L(state, step=0.08):
-    """Mutate IGZO composition. Enforces f_Ga >= 0.15 on cation sublattice."""
+    """Mutate IGZO composition, enforcing the L cation-sublattice floors
+    (Ga >= 0.20, Zn >= 0.05, In >= 0.05) via _enforce_L_cation_floors."""
     new_state = json.loads(json.dumps(state))
     comp = new_state["materials"]["channel_composition"]
 
@@ -214,21 +261,10 @@ def mutate_L(state, step=0.08):
     for k in comp:
         comp[k] /= total
 
-    # Enforce amorphous stability: Ga >= 15% on cation sublattice
-    metals = {k: v for k, v in comp.items() if k != "O"}
-    metal_total = sum(metals.values())
-    f_Ga_cation = comp.get("Ga", 0) / metal_total if metal_total > 0 else 0
-
-    if f_Ga_cation < 0.20:
-        deficit = 0.20 * metal_total - comp.get("Ga", 0)
-        comp["Ga"] = comp.get("Ga", 0) + deficit
-        # Re-normalize O is fixed, re-normalize metals
-        metals = {k: comp[k] for k in comp if k != "O"}
-        metal_sum = sum(metals.values())
-        o_val = comp["O"]
-        total2 = metal_sum + o_val
-        for k in comp:
-            comp[k] /= total2
+    # Enforce the cation-sublattice floors (single source of truth). The old
+    # inline Ga-only fix under-corrected (target 0.20 -> actual ~0.167) and had
+    # no Zn floor, letting the search drift to Ga<0.20 / Zn~0 (In-Ga-O).
+    _enforce_L_cation_floors(comp)
 
     return new_state
 
