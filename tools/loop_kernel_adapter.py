@@ -30,8 +30,18 @@ from pathlib import Path
 
 # Add project root to path (script lives in tools/, project root is one level up)
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+# Also put tools/ on the path so we can reuse the Monte-Carlo yield model.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.morphium_kernel.kernel import KernelClient
+
+# Robust (yield-gated) objective reuses the process-sigma Monte-Carlo yield model
+# already implemented in sensitivity_analysis.py. Imported here so the search can
+# optimise for *fabrication yield* directly instead of peak nominal metrics.
+try:
+    from sensitivity_analysis import run_monte_carlo as _mc_yield
+except Exception:  # pragma: no cover - peak mode must work even if this fails
+    _mc_yield = None
 
 
 # ---------------------------------------------------------------------------
@@ -323,13 +333,20 @@ def tournament_select(population_with_scores, k=3):
 # Main search loop
 # ---------------------------------------------------------------------------
 
-def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
+def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02,
+               robust=False, mc_samples=64):
     if layer not in GENERATORS:
         supported = ", ".join(GENERATORS.keys())
         print(f"Error: Layer {layer!r} not supported. Supported: {supported}")
         return
+    if robust and _mc_yield is None:
+        print("Error: --robust requested but sensitivity_analysis.run_monte_carlo "
+              "could not be imported.")
+        return
 
+    obj = f"ROBUST (fab-yield, {mc_samples} MC/candidate)" if robust else "PEAK (nominal metric)"
     print(f"\nStarting GA Search: Layer={layer}, Budget={budget}, Pop={pop_size}")
+    print(f"Objective: {obj}")
     print(f"{'─'*60}")
 
     contract = kc.contract(layer)
@@ -342,6 +359,7 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
     best_score  = -float("inf")
     best_state  = None
     best_trial  = 0
+    best_yield  = None
     n_promoted  = 0
 
     for i in range(budget):
@@ -366,8 +384,19 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
         result  = kc.simulate(layer, candidate_state, seed=seed)
         metrics = result.get("metrics", result.get("data", {}))
 
-        # Score (GA-adjusted)
-        score = ga_score(kc, layer, metrics)
+        # Objective. PEAK = nominal GA-adjusted metric (original behaviour).
+        # ROBUST = fabrication yield under process sigma (fraction of Monte-Carlo
+        # samples that pass all thresholds), with the nominal score as a tiny
+        # tiebreaker so equal-yield candidates still prefer better metrics. This
+        # makes the GA hunt for recipes that survive fab variation, not cliff-edge
+        # peaks that look great nominally but fail most real devices.
+        nominal_score = ga_score(kc, layer, metrics)
+        if robust:
+            yld, _ = _mc_yield(kc, layer, candidate_state, n_samples=mc_samples)
+            score = yld + 1e-6 * nominal_score
+        else:
+            yld = None
+            score = nominal_score
 
         # Log trial
         trial_entry = {
@@ -378,6 +407,8 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
             "metrics": metrics,
             "hash": result.get("hash", ""),
             "score": score,
+            "nominal_score": nominal_score,
+            "yield": yld,
         }
         kc.commit_trial(trial_entry)
 
@@ -394,8 +425,10 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
             best_score = score
             best_state = candidate_state
             best_trial = i
-            summary = _format_best(layer, metrics, score)
-            print(f"  [{i:4d}] ★ New Best: {summary}")
+            best_yield = yld
+            summary = _format_best(layer, metrics, nominal_score)
+            ytxt = f" yield={yld*100:5.1f}% |" if yld is not None else ""
+            print(f"  [{i:4d}] ★ New Best:{ytxt} {summary}")
 
         # Update population (keep best pop_size candidates)
         # Replace worst if population full
@@ -413,7 +446,18 @@ def run_search(layer, budget, kc, pop_size=30, step_start=0.12, step_end=0.02):
 
     print(f"\n{'─'*60}")
     print(f"Search complete: {budget} trials, {n_promoted} promotions")
-    print(f"Best state (trial {best_trial}, score={best_score:.2f}):")
+
+    # Validate the champion's fabrication yield at high MC resolution (works for
+    # both objectives — shows the *real* fab robustness of whatever was found).
+    champ_yield = None
+    if best_state is not None and _mc_yield is not None and layer in ("L", "PM", "E", "EM"):
+        try:
+            champ_yield, _ = _mc_yield(kc, layer, best_state, n_samples=2000)
+        except Exception:
+            champ_yield = None
+
+    ytxt = f", fab-yield(2000 MC)={champ_yield*100:.1f}%" if champ_yield is not None else ""
+    print(f"Best state (trial {best_trial}, score={best_score:.2f}{ytxt}):")
     print(json.dumps(best_state, indent=2))
 
 
@@ -461,9 +505,16 @@ if __name__ == "__main__":
                         help="Global random seed (default: 7)")
     parser.add_argument("--root",   default=".",
                         help="Project root directory (default: .)")
+    parser.add_argument("--robust", action="store_true",
+                        help="Optimise for fabrication YIELD under process sigma "
+                             "(Monte-Carlo) instead of peak nominal metric.")
+    parser.add_argument("--mc-samples", type=int, default=64, dest="mc_samples",
+                        help="MC samples per candidate in --robust mode (default: 64). "
+                             "Lower = faster search, higher = less noisy yield estimate.")
     args = parser.parse_args()
 
     random.seed(args.seed)
 
     kc = KernelClient(project_root=args.root)
-    run_search(args.layer, args.budget, kc, pop_size=args.pop)
+    run_search(args.layer, args.budget, kc, pop_size=args.pop,
+               robust=args.robust, mc_samples=args.mc_samples)
