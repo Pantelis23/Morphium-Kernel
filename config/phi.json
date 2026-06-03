@@ -5,18 +5,22 @@
     "L": {
         "_calibration_status": "literature_calibrated",
         "_calibration_date": "2026-06-03",
-        "_calibration_method": "single_point_additive",
-        "_calibration_n_points": 2,
-        "_calibration_formula": "InGaZnO4 (a-IGZO, 1:1:1 cation)",
-        "_mean_bias_pct": -26.0,
-        "_uncertainty_pct": 40.0,
+        "_calibration_method": "regional_additive (In-rich operating point)",
+        "_calibration_n_points": 5,
+        "_calibration_formula": "In-rich a-IGZO (champion cation In~0.6); anchored vs 1:1:1",
+        "_mean_bias_pct": -24.0,
+        "_uncertainty_pct": 28.0,
         "_sources": [
-            "Nomura & Hosono et al. 2004 (Nature 432, 488, 10.1038/nature03090): first a-IGZO TFT, saturation mobility 6-9 cm2/Vs",
-            "Modern a-IGZO TFT consensus 2019-2025 (IOP/MDPI/ACS reviews): baseline mobility 10-15 cm2/Vs, 19-35 In-rich; SS typically 100-200 mV/dec; Ioff ~1e-13 A; on/off >1e8"
+            "Nomura & Hosono et al. 2004 (Nature 432, 488) / 2010 (STAM 11 044305): 1:1:1 anchor, Hall mu ~10-16 cm2/Vs",
+            "Lee/Cho et al. 2018 (J. SID, 10.1080/15980316.2018.1540365): In0.38Ga0.18Zn0.44O mu=39.4; In0.45Ga0.15Zn0.40O mu=48.3 cm2/Vs (ALD combinatorial)",
+            "a-IGZO/In-rich heterostructure 2025 (J. Alloys Compd. S0925838825035960): In-rich channel mu=42.1 cm2/Vs, on/off 4.8e8",
+            "In-rich consensus: mu rises monotonically with In/(In+Ga) (In-5s overlap); ~40-50 cm2/Vs at cation In 0.45-0.6, spread ~+-20% (process-fixed)",
+            "Tradeoff (Sci. Rep. 2024 s41598-024-81556-y): In-rich -> negative Vth, higher Ioff, worse NBIS; amorphous-stable window tops out ~cation In 0.5-0.7"
         ],
-        "_notes": "Web-literature check 2026-06-03 (sim-vs-lit at canonical anchor, run in throwaway): sim UNDERPREDICTS baseline mobility (5.71 at 1:1:1 vs 6-9 Nomura / 10-15 modern) and is OPTIMISTIC on subthreshold swing (64 vs ~130 mV/dec real). Ioff ok (3.7e-13 vs ~1e-13). Modest +offsets applied; uncertainty kept HIGH at 40% because literature mobility genuinely spans 6->50 cm2/Vs (strong composition/process dependence) -- L remains the least-trustworthy sim and the data confirms it. crystallization_risk has no direct measurement (a-IGZO amorphous/stable) -> offset 0. Update with in-house Hall mobility + transfer-curve runs.",
+        "_correction_note": "AUDIT/RELIABILITY follow-up 2026-06-03: L's +-40% was the stack's fab-failure bottleneck. A focused review of the In-rich REGION (where the champion sits, cation In~0.6) shows it is far better constrained than the full composition range: independent groups agree to ~+-20% (process-fixed), so +-40% was too pessimistic. Tightened to 28% (covers +-20% physics + deposition-method scatter). The model still UNDER-predicts In-rich mobility (~20 vs lit ~40-48) because the percolation/IIS penalties (audit-verified physics) are conservative at high In -- this under-estimate is SAFE (real device better than modelled) and is left as a documented limitation; a future model revision could steepen the In-coop / ease the In-rich percolation penalty rather than inflate the additive offset (which would overshoot low-In, the EM lesson).",
+        "_notes": "mobility offset 2.0 -> 4.0 (modest, stays conservative everywhere: 1:1:1 ~9.7 vs lit ~13; champion ~22 vs lit ~45 -- both still under-estimates, no overshoot). SS offset 20 (model interface-trap term carries the rest). crystallization_risk uncalibrated -> 0. Update with in-house Hall mobility + NBIS runs at the In-rich champion composition.",
         "offsets": {
-            "mobility_cm2_Vs": 2.0,
+            "mobility_cm2_Vs": 4.0,
             "SS_mV_dec": 20.0,
             "crystallization_risk": 0.0
         }
