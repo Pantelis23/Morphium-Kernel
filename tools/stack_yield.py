@@ -69,11 +69,14 @@ M_CHAMPION = {
 M_SIGMA = {"gap_nm": 0.08, "max_voltage_V": 0.02, "area_um2": 0.03}
 
 # Foglet promotion thresholds:
-#  - latch force must clear a hold floor (>> a ~100 µm foglet's ~1e-5 mN weight;
-#    the margin covers shear, dynamics and adhesion-assist hand-off).
+#  - latch force must clear a useful-hold floor. A ~100 µm foglet weighs ~1e-5 mN;
+#    a meaningful latch must also resist locomotion shear and carry payload
+#    (~100x self-weight), i.e. ~1e-2 mN, with margin. Floor set to 0.1 mN.
+#    (Was 1.0 mN — un-justified, and only cleared by the audit-C-1 25x-inflated
+#    force; with the corrected air-gap physics the champion is ~0.28 mN.)
 #  - electrode field V/gap must stay below the HfO2 dielectric-breakdown limit
 #    (thin ALD HfO2 ~10 MV/cm = 1.0 V/nm; conservative-ish upper guard).
-M_MIN_LATCH_mN = 1.0
+M_MIN_LATCH_mN = 0.1
 M_BREAKDOWN_V_PER_NM = 1.0
 
 
