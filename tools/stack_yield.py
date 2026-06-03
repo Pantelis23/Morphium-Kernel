@@ -80,9 +80,11 @@ M_MIN_LATCH_mN = 0.1
 M_BREAKDOWN_V_PER_NM = 1.0
 
 
-def foglet_yield(kc, champ, n=2000, model_scale=0.0):
-    """MC over the foglet's fab-sensitive knobs. Returns (yield, fail_counts)."""
+def foglet_yield(kc, champ, n=2000, model_scale=0.0, stack=None):
+    """MC over the foglet's fab-sensitive knobs. Returns (yield, fail_counts).
+    `stack` carries the E/EM/PM champion metrics the M model couples to."""
     unc, _ = model_uncertainty_for(kc, "M")  # M absent from phi -> uncalibrated default
+    stack = stack or {}
     passed = 0
     fail = {"latch_force": 0, "dielectric_breakdown": 0}
     f = champ["foglet"]
@@ -98,6 +100,7 @@ def foglet_yield(kc, champ, n=2000, model_scale=0.0):
                          "latching": {**f["latching"],
                                       "electrode_geometry": {"area_um2": area, "gap_nm": gap}},
                          "power": {**f["power"], "max_voltage_V": volt}},
+              "stack": stack,
               "seed": seed}
         r = kc.simulate("M", st, seed=seed)
         force = r.get("metrics", {}).get("latch_normal_force_mN", 0.0)
@@ -140,6 +143,7 @@ def main():
     print("Finding current robust+calibrated champions (live search, "
           f"budget={args.search_budget})...", flush=True)
     subs, recipes = {}, {}
+    mstack = {}   # E/EM/PM champion metrics the M foglet model couples to
     for layer in ("E", "EM", "PM"):
         champ = run_search(layer, args.search_budget, kc, robust=True, model_risk=True,
                            mc_samples=args.search_mc, quiet=True, commit=False)
@@ -147,8 +151,18 @@ def main():
         y, _ = run_monte_carlo(kc, layer, state, n_samples=args.mc, model_sigma_scale=ms)
         subs[layer] = y
         recipes[layer] = _recipe(layer, state)
+        # Pull the metrics the M model depends on (EM->actuation, E->controller,
+        # PM->comms) so the foglet is a genuine composite of THIS run's champions.
+        r = kc.simulate(layer, state, seed=42)
+        cm = r.get("metrics", r.get("data", {}))
+        if layer == "EM":
+            mstack["EM_d33_pC_N"] = cm.get("d33_pC_N", 20.0)
+        elif layer == "E":
+            mstack["E_endurance_cycles"] = cm.get("endurance_cycles", 1e10)
+        elif layer == "PM":
+            mstack["PM_loss_k"] = cm.get("loss_k", 1e-5)
 
-    fog, fog_fail = foglet_yield(kc, M_CHAMPION, n=args.mc, model_scale=ms)
+    fog, fog_fail = foglet_yield(kc, M_CHAMPION, n=args.mc, model_scale=ms, stack=mstack)
 
     stack = fog
     for y in subs.values():

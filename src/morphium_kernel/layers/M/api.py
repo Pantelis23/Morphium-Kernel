@@ -5,6 +5,7 @@ Implements the contract defined in contract.yaml.
 import random
 import re
 import json
+import math
 import hashlib
 
 class MorphiumSimulatorM:
@@ -69,17 +70,88 @@ class MorphiumSimulatorM:
         _sigma0_kPa = (W_adhesion / 0.3e-9) / 1000.0          # W/z0, z0~0.3 nm
         shear_kPa = _sigma0_kPa * 6.6e-5 * ((200.0e-12 / max(pad_area, 1e-15)) ** 0.15)
         
-        # Deterministic Noise
+        # ------------------------------------------------------------------
+        # COMPOSITE COUPLINGS. A foglet's capabilities derive from the E/EM/PM
+        # stack beneath it (contract: required_layers [E, EM, PM]). The relevant
+        # sub-layer champion metrics arrive in state["stack"] (defaults let the
+        # model still run standalone). EM -> actuation/locomotion; E -> controller
+        # (nonvolatile-state endurance); PM -> optical comms. This realises the
+        # dependency the contract declared but the old stub ignored.
+        # ------------------------------------------------------------------
+        stack = state.get("stack", {})
+        em_d33    = stack.get("EM_d33_pC_N", 20.0)         # pm/V piezo coefficient
+        e_endur   = stack.get("E_endurance_cycles", 1e10)  # controller NVM endurance
+        pm_loss_k = stack.get("PM_loss_k", 1e-5)           # photonic loss (comms)
+
+        # --- Foglet mass & weight ---
+        form   = foglet.get("form_factor", {})
+        L_um   = form.get("characteristic_length_um", 100.0)
+        mass_ug = form.get("mass_ug", power.get("mass_ug", None))
+        if mass_ug is None:
+            mass_ug = 2000.0 * (L_um * 1e-6) ** 3 * 1e9    # m=rho*L^3, rho~2000 kg/m3
+        weight_N = mass_ug * 1e-9 * 9.81
+
+        # --- Piezo actuation / locomotion (driven by EM d33) ---
+        # Amplified actuator (multilayer stack x lever, gain ~1e3): step
+        # displacement = d33[pm/V] * V * gain. Better EM champion (higher d33)
+        # -> larger step -> faster, lower energy per distance.
+        ACT_GAIN = 1000.0
+        step_size_um   = em_d33 * voltage * ACT_GAIN / 1e6
+        C_act          = max(cap_F, 1e-15) * 10.0          # actuator cap class
+        step_energy_uJ = 0.5 * C_act * (voltage ** 2) * 1e6
+        max_power_mW   = power.get("max_power_mW", 1.0)
+        step_rate_Hz   = min((max_power_mW * 1e-3) / max(step_energy_uJ * 1e-6, 1e-15), 1e4)
+        max_speed_mm_s = step_size_um * step_rate_Hz / 1000.0
+
+        # --- Payload ratio: self-weights the latch can hold ---
+        payload_ratio = force_N / max(weight_N, 1e-18)
+
+        # --- cycle_life: electrostatic-latch endurance (field-stress power law) ---
+        field_V_per_nm = voltage / (gap * 1e9)
+        bd_margin  = (1.0 / field_V_per_nm) if field_V_per_nm > 0 else 1e6   # E_bd(1.0)/E_op
+        cycle_life = min(1e3 * (max(bd_margin, 0.1) ** 4), 1e12)
+        # Controller NVM endurance caps usable cycle life (E layer dependency).
+        cycle_life = min(cycle_life, e_endur)
+
+        # --- failure_rate_pct (heaviest contract metric): combine independent
+        #     failure modes via soft margins (breakdown, latch hold, actuator). ---
+        def _soft_fail(margin, sharp):
+            z = sharp * (margin - 1.0)
+            if z > 50.0:
+                return 0.0
+            if z < -50.0:
+                return 1.0
+            return 1.0 / (1.0 + math.exp(z))
+        p_bd    = _soft_fail(bd_margin, 6.0)                       # bd_margin > 1 safe
+        hold_margin = force_N / max(weight_N * 10.0, 1e-18)        # hold >= 10x weight
+        p_latch = _soft_fail(hold_margin, 4.0)
+        p_act   = _soft_fail(payload_ratio / 10.0, 4.0)           # lift >= 10x weight
+        failure_rate_pct = (1.0 - (1.0 - p_bd) * (1.0 - p_latch) * (1.0 - p_act)) * 100.0
+
+        # --- swarm reconfiguration: time to traverse a 1 mm reference at max_speed ---
+        reconfiguration_time_s = 1.0 / max(max_speed_mm_s, 1e-6)
+
+        # --- Deterministic noise (deposition / contact variability) ---
         if self.seed:
-            noise = 1.0 + (random.uniform(-0.1, 0.1))
-            force_mN *= noise
-            shear_kPa *= noise
-            
+            n = 1.0 + random.uniform(-0.1, 0.1)
+            force_mN *= n; shear_kPa *= n
+            step_size_um *= n; max_speed_mm_s *= n
+            failure_rate_pct = min(failure_rate_pct * n, 100.0)
+
         return {
-            "latch_normal_force_mN": round(force_mN, 3),
+            "latch_normal_force_mN":       round(force_mN, 3),
             "adhesion_shear_strength_kPa": round(shear_kPa, 2),
-            "release_energy_uJ": round(0.5 * cap_F * (voltage**2) * 1e6, 9), # 0.5 C V^2, geometry-derived (M-5)
-            "cycle_life": 10000,
+            "release_energy_uJ":           round(0.5 * cap_F * (voltage**2) * 1e6, 9),
+            "cycle_life":                  int(cycle_life),
+            "step_size_um":                round(step_size_um, 4),
+            "step_energy_uJ":              round(step_energy_uJ, 9),
+            "max_speed_mm_s":              round(max_speed_mm_s, 4),
+            "payload_ratio":               round(payload_ratio, 2),
+            "failure_rate_pct":            round(failure_rate_pct, 3),
+            "reconfiguration_time_s":      round(reconfiguration_time_s, 4),
+            "_em_d33_used":                em_d33,
+            "_mass_ug":                    round(mass_ug, 6),
+            "_field_V_per_nm":             round(field_V_per_nm, 4),
             "seed": self.seed
         }
 
