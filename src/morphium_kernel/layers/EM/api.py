@@ -258,11 +258,19 @@ class MorphiumSimulatorEM:
         d33_eff *= noise_d33
         E_eff   *= noise_E
 
+        # Actuation fatigue endurance (RELIABILITY): ScAlN piezo-MEMS cycle life
+        # is limited by mechanical fatigue + secondary-phase (rock-salt) defect
+        # nucleation. HEURISTIC (uncalibrated): a stable, well-textured wurtzite
+        # film (high f_stab, low sec_phase_risk) endures more flex cycles. ~1e11
+        # baseline (AlN-class MEMS), derated by phase risk.
+        actuation_endurance = min(1.0e11, 1.0e11 * f_stab * (1.0 - 0.5 * sec_phase_risk))
+
         return {
             "d33_pC_N":            round(d33_eff, 2),
             "youngs_modulus_GPa":  round(E_eff, 1),
             "coupling_kt2_pct":    round(kt2_pct, 2),
             "sc_fraction":         round(x, 4),
+            "actuation_endurance": int(actuation_endurance),
             # Diagnostics
             "_phase_stability":    round(f_stab, 4),
             "_f_texture":          round(f_texture, 4),

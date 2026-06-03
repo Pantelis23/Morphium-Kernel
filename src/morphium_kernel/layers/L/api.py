@@ -297,6 +297,12 @@ class MorphiumSimulatorL:
         # ----------------------------------------------------------------
         cryst_risk = min(1.0, math.exp(-10.0 * max(f_Ga - 0.10, 0.0)))
 
+        # Operational endurance (RELIABILITY): a-IGZO TFT lifetime is set by
+        # bias-stress Vth drift — smaller per-decade drift -> more switching
+        # cycles before the Vth window is exhausted. HEURISTIC (uncalibrated):
+        # cycles ~ (tolerable Vth window) / (drift per cycle). ~1e6-1e10.
+        operational_endurance = min(1.0e10, 1.0e6 / max(delta_Vth_stress, 1e-4))
+
         return {
             "mobility_cm2_Vs":           round(mu_final, 3),
             "Ion_A":                     I_on,
@@ -305,6 +311,7 @@ class MorphiumSimulatorL:
             "Vth_V":                     round(Vth, 3),
             "hysteresis_V":              round(hysteresis, 4),
             "delta_Vth_biasstress_V":    round(delta_Vth_stress, 4),
+            "operational_endurance":     int(operational_endurance),
             "leakage_W":                 leakage_W,
             "crystallization_risk":      round(cryst_risk, 2),
             # Diagnostic (not in contract)

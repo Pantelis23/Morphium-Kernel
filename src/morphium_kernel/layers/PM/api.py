@@ -356,10 +356,27 @@ class MorphiumSimulatorPM:
         # ----------------------------------------------------------------
         fom = delta_n / k_amorph
 
+        # ----------------------------------------------------------------
+        # 9.  Phase-change cycling endurance (RELIABILITY)
+        #
+        #     Amorphous<->crystalline switches before failure. Sb2Se3 is a
+        #     high-endurance phase-change material (low mass transport / small
+        #     density contrast vs GST) -> ~1e6-1e9 cycles (Delaney 2021). The
+        #     rigid Ge-Sb-Se glass network resists void/segregation accumulation
+        #     (the dominant end-of-life mechanism), and halogen passivation heals
+        #     vacancy defects; both extend cycle life. Base 1e7.
+        # ----------------------------------------------------------------
+        cyc = 1.0e7
+        if has_Ge and has_Sb and has_Se:
+            cyc *= 5.0                       # glass network resists voids
+        cyc *= (1.0 + 3.0 * passiv_sat)      # halogen heals defects (up to 4x)
+        cycling_endurance = min(cyc, 1.0e9)
+
         return {
             "delta_n":           round(delta_n,  4),
             "loss_k":            round(k_amorph, 6),
             "fom":               round(fom,      2),
+            "cycling_endurance": int(cycling_endurance),
             # Diagnostic outputs (useful for GA debugging, not in contract)
             "_n_cryst_eff":      round(n_cryst_eff,  4),
             "_n_amorph_eff":     round(n_amorph_eff, 4),
