@@ -46,11 +46,23 @@ class MorphiumSimulatorM:
                 k = props["k"]
                 break
                 
-        # Parallel-plate electrostatic latch (gap medium per k above).
-        # F = eps0*k*A*V^2/(2*d^2) = (C_gap)*V^2/(2*d); C_gap reused for release.
+        # Latch force depends on the latch MECHANISM. Electrostatic latches are
+        # strong but wear by dielectric field stress (low endurance); mechanical
+        # micro-interlocks have no field-stress wear (orders-higher endurance) at
+        # the cost of engagement actuation; hybrid uses a mechanical hold with a
+        # brief electrostatic assist (high endurance, low breakdown duty).
+        latch_type = latching.get("type", "electrostatic")
         eps0 = 8.854e-12
         cap_F = eps0 * k * area / gap
-        force_N = cap_F * (voltage ** 2) / (2.0 * gap)
+        force_es_N = cap_F * (voltage ** 2) / (2.0 * gap)        # parallel-plate
+        SIGMA_LATCH_PA = 2.0e6                                   # micro-interlock stress (partial engagement)
+        force_mech_N = SIGMA_LATCH_PA * area
+        if latch_type == "mechanical":
+            force_N, uses_field = force_mech_N, False
+        elif latch_type == "hybrid":
+            force_N, uses_field = force_es_N + force_mech_N, True
+        else:  # electrostatic
+            force_N, uses_field = force_es_N, True
         force_mN = force_N * 1e3
         
         # Dry adhesion (fibrillar / van der Waals) — physical first pass.
@@ -106,15 +118,20 @@ class MorphiumSimulatorM:
         # --- Payload ratio: self-weights the latch can hold ---
         payload_ratio = force_N / max(weight_N, 1e-18)
 
-        # --- cycle_life: electrostatic-latch endurance (field-stress power law) ---
-        field_V_per_nm = voltage / (gap * 1e9)
+        # --- cycle_life: latch endurance (mechanism-dependent) ---
+        field_V_per_nm = (voltage / (gap * 1e9)) if uses_field else 0.0
         bd_margin  = (1.0 / field_V_per_nm) if field_V_per_nm > 0 else 1e6   # E_bd(1.0)/E_op
-        cycle_life = min(1e3 * (max(bd_margin, 0.1) ** 4), 1e12)
-        # Controller NVM endurance caps usable cycle life (E layer dependency).
-        cycle_life = min(cycle_life, e_endur)
+        if latch_type == "mechanical":
+            cyc_latch = 1.0e8                    # mechanical fatigue, no field wear
+        elif latch_type == "hybrid":
+            cyc_latch = 5.0e7                    # mechanical hold + brief field pulses
+        else:                                    # electrostatic: field-stress power law
+            cyc_latch = 1e3 * (max(bd_margin, 0.1) ** 4)
+        cycle_life = min(cyc_latch, 1e12, e_endur)   # E-layer NVM endurance caps it
 
         # --- failure_rate_pct (heaviest contract metric): combine independent
-        #     failure modes via soft margins (breakdown, latch hold, actuator). ---
+        #     failure modes via soft margins. Breakdown applies only to
+        #     field-using latches (and at reduced duty for hybrid). ---
         def _soft_fail(margin, sharp):
             z = sharp * (margin - 1.0)
             if z > 50.0:
@@ -122,7 +139,12 @@ class MorphiumSimulatorM:
             if z < -50.0:
                 return 1.0
             return 1.0 / (1.0 + math.exp(z))
-        p_bd    = _soft_fail(bd_margin, 6.0)                       # bd_margin > 1 safe
+        if not uses_field:
+            p_bd = 0.0
+        elif latch_type == "hybrid":
+            p_bd = 0.3 * _soft_fail(bd_margin, 6.0)   # brief assist pulses -> low duty
+        else:
+            p_bd = _soft_fail(bd_margin, 6.0)
         hold_margin = force_N / max(weight_N * 10.0, 1e-18)        # hold >= 10x weight
         p_latch = _soft_fail(hold_margin, 4.0)
         p_act   = _soft_fail(payload_ratio / 10.0, 4.0)           # lift >= 10x weight
@@ -138,11 +160,13 @@ class MorphiumSimulatorM:
             step_size_um *= n; max_speed_mm_s *= n
             failure_rate_pct = min(failure_rate_pct * n, 100.0)
 
+        release_uJ = 0.0 if latch_type == "mechanical" else 0.5 * cap_F * (voltage**2) * 1e6
         return {
             "latch_normal_force_mN":       round(force_mN, 3),
             "adhesion_shear_strength_kPa": round(shear_kPa, 2),
-            "release_energy_uJ":           round(0.5 * cap_F * (voltage**2) * 1e6, 9),
+            "release_energy_uJ":           round(release_uJ, 9),
             "cycle_life":                  int(cycle_life),
+            "_latch_type":                 latch_type,
             "step_size_um":                round(step_size_um, 4),
             "step_energy_uJ":              round(step_energy_uJ, 9),
             "max_speed_mm_s":              round(max_speed_mm_s, 4),

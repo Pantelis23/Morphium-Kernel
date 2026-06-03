@@ -247,7 +247,7 @@ def generate_random_state_M():
         "foglet": {
             "form_factor": {"characteristic_length_um": round(random.uniform(20.0, 500.0), 1)},
             "structure": {"shell_material": "HfO2:DLC"},
-            "latching": {"type": "electrostatic",
+            "latching": {"type": random.choice(["electrostatic", "mechanical", "hybrid"]),
                          "electrode_geometry": {
                              "area_um2": round(random.uniform(50.0, 500.0), 1),
                              "gap_nm":   round(random.uniform(20.0, 200.0), 1)}},
@@ -389,6 +389,8 @@ def mutate_M(state, step=0.10):
         f["power"]["max_voltage_V"] * (1 + random.gauss(0, step)), 5.0), 100.0)
     f["adhesion"]["pad_area_um2"] = max(
         f["adhesion"]["pad_area_um2"] * (1 + random.gauss(0, step)), 10.0)
+    if random.random() < 0.15:   # occasionally try a different latch mechanism
+        f["latching"]["type"] = random.choice(["electrostatic", "mechanical", "hybrid"])
     return s
 
 
