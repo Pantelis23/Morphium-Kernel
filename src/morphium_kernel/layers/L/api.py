@@ -79,7 +79,10 @@ Physics Models Implemented:
      structural disorder suppression → In₂O₃ nanocrystallites nucleate
      under gate-bias stress → severe Vth instability.
 
-Calibration target (champion seed 42):
+Model calibration-reference device (seed 42) — a real ~1:1:1-ish IGZO point
+the mobility model is anchored to (NOT the recommended champion: its cation
+Zn=0.051 is below the Zn>=0.10 floor; see CHAMPIONS for the floor-compliant
+champion, In-rich, μ≈20):
   Composition: In=0.262, Ga=0.244, Zn=0.027, O=0.467  (normalised)
   Expected: μ ≈ 13 cm²/Vs, I_off ≈ 4e-12 A, SS ≈ 77 mV/dec
 
@@ -172,7 +175,8 @@ class MorphiumSimulatorL:
         materials = state.get("materials", {})
         comp_raw  = materials.get(
             "channel_composition",
-            {"In": 0.262, "Ga": 0.244, "Zn": 0.027, "O": 0.467}
+            # Fallback default = the floor-compliant champion (cation Zn=0.10).
+            {"In": 0.2522, "Ga": 0.1093, "Zn": 0.0402, "O": 0.5983}
         )
 
         # ----------------------------------------------------------------
@@ -329,7 +333,8 @@ def execute(state):
 if __name__ == "__main__":
     import sys
 
-    # Champion composition from ledger
+    # Model calibration-reference device (mu~13 anchor; below the Zn>=0.10 floor,
+    # NOT the recommended champion — see CHAMPIONS for the floor-compliant one).
     champion = {"In": 0.262, "Ga": 0.244, "Zn": 0.027, "O": 0.467}
 
     tests = [

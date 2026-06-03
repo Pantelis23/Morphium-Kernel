@@ -85,7 +85,9 @@ E_U_MIN      = 0.040   # [eV] floor (perfect glass, no passivation can go below)
 # Disorder floor for k: represents thin-film contributions independent of
 # the Urbach tail (surface roughness Ra ~ λ/50, grain-boundary scattering,
 # residual point defects).  Set to 5 % of the intrinsic k_base value.
-K_DISORDER_FRAC = 0.05
+K_DISORDER_FRAC = 1.5e-4   # was 0.05 (audit M-2): the floor pinned Sb2Se3 k at
+# ~2e-3, ~85x above the real <1e-5 at 1550 nm. A good NIR film's residual
+# (roughness/grain-boundary) loss is ~1e-5, not 5% of the visible-range k_base.
 
 # ---------------------------------------------------------------------------
 # Glass-former network effect (Ge + Sb + Se co-present)
@@ -117,7 +119,7 @@ GLASS_K_REDUCTION   = 0.20    # fractional k reduction from network ordering
 # ---------------------------------------------------------------------------
 ELEMENTS = {
     #       n_cryst  n_amorph  k_base   E_g_amorph [eV]
-    "Sb": ( 4.20,    3.10,     0.040,   1.70  ),  # High phase contrast; low k amorph
+    "Sb": ( 4.20,    3.10,     0.010,   1.70  ),  # High phase contrast; NIR k_base 0.040->0.010 (audit M-2: 0.040 was a visible-range value; Sb2Se3 is transparent <1e-5 at 1550 nm)
     "Se": ( 2.70,    2.50,     0.002,   2.00  ),  # Low loss, wide gap chalcogenide
     "Ge": ( 4.00,    3.20,     0.008,   1.10  ),  # Glass former; narrows gap slightly
     "Te": ( 4.60,    3.30,     0.250,   0.35  ),  # High n but absorbs at 1550 nm!

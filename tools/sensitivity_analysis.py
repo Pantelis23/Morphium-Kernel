@@ -48,13 +48,17 @@ from src.morphium_kernel.kernel import KernelClient
 
 CHAMPIONS = {
     "L": {
+        # Regenerated 2026-06-03 (audit M-1): the prior champion had cation
+        # Zn=0.003 (effectively In-Ga-O), violating the literature-justified
+        # Zn>=0.10 floor. This one satisfies it: cation In=0.628/Ga=0.272/Zn=0.100,
+        # mobility ~20 cm2/Vs (robust+model-risk search under the current floors).
         "materials": {
             "channel_material": "IGZO",
             "channel_composition": {
-                "In": 0.23988356404303798,
-                "Ga": 0.08943513607210508,
-                "Zn": 0.0008765236230273874,
-                "O": 0.6698047762618297
+                "In": 0.2522,
+                "Ga": 0.1093,
+                "Zn": 0.0402,
+                "O": 0.5983
             }
         },
         "seed": 42
