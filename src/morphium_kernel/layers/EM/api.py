@@ -10,11 +10,12 @@ Physics Models Implemented:
      Hakonen 2019, Fichtner 2019):
        x=0.00: d₃₃ = 3.9 pC/N  (pure AlN)
        x=0.12: d₃₃ ≈ 7.0 pC/N
-       x=0.25: d₃₃ ≈ 11.0 pC/N
-       x=0.40: d₃₃ ≈ 18.0 pC/N  (practical maximum before instability)
+       x=0.25: d₃₃ ≈ 13.0 pC/N
+       x=0.40: d₃₃ ≈ 26.0 pC/N  (reactive-magnetron consensus peak before instability)
 
      Fit: d₃₃_bulk(x) = D33_ALN × (1 + A₁×x + A₂×x²)
-     Calibrated: A₁ = 5.60, A₂ = 8.60 (super-linear growth from s-d hybridisation)
+     Calibrated: A₁ = 8.40, A₂ = 12.90 (super-linear growth from s-d hybridisation;
+     rescaled 2026-06-03 to the ~26-27 pC/N peak, Akiyama 2009 / Mertin 2017)
 
   2. Phase Stability Cliff (f_stab):
 
@@ -96,9 +97,13 @@ KT2_ALN  = 0.065  # Thickness-mode coupling of AlN (6.5%)
 E_ALN    = 310.0  # [GPa] Young's modulus AlN
 E_SCN    = 180.0  # [GPa] Young's modulus ScN (rock-salt, softer)
 
-# d₃₃ quadratic fit coefficients (calibrated to literature)
-D33_A1   = 5.60
-D33_A2   = 8.60
+# d₃₃ quadratic fit coefficients. Rescaled x1.5 from the original (5.60/8.60)
+# on 2026-06-03 (audit M-6/M-7): the old coefficients gave d33_bulk(0.40)=18
+# (eff ~16.6 after f_texture), ~35% below the reactive-magnetron consensus peak
+# of ~26-27 pC/N at x=0.40-0.43 (Akiyama 2009 27.6@0.43; Mertin/Zywitzki 2017
+# 26.9-27.3). Now d33_bulk(0.40)=25.1 (eff ~23), small residual phi offset.
+D33_A1   = 8.40
+D33_A2   = 12.90
 
 # Phase stability cliff (bulk, in Sc mole fraction)
 # Asymmetric: fully stable below cliff, exponential collapse above.
