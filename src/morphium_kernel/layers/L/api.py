@@ -117,7 +117,13 @@ E_SCALE_DISORDER = 0.04   # [eV / nat]
 # ---------------------------------------------------------------------------
 # Indium cooperative s-orbital enhancement
 # ---------------------------------------------------------------------------
-IN_COOP_FACTOR = 0.5      # super-linear In enhancement coefficient
+# Recalibrated 2026-06-04 to the In-rich literature (Lee/Cho 2018: In0.45 ->
+# 48 cm2/Vs; consensus In-rich 40-48, ~3.5x the 1:1:1 anchor). The old 0.5 /
+# 60-cap throttled In-rich to ~20 (model was ~2x low — pressure-test ceiling).
+# Steeper coefficient + decoupled In-rich band-mobility cap (In-rich trends
+# toward In2O3-like ~110) now reproduces both anchors: 1:1:1 ~13, In-rich ~45.
+IN_COOP_FACTOR = 3.3      # super-linear In enhancement coefficient
+MU_IN_MAX      = 110.0    # [cm2/Vs] In-rich band-mobility ceiling (In2O3-like)
 
 # ---------------------------------------------------------------------------
 # O-vacancy model exponents
@@ -207,7 +213,7 @@ class MorphiumSimulatorL:
         # Cooperative In s-orbital enhancement (super-linear, capped)
         mu_0 = min(
             mu_0 * (1.0 + IN_COOP_FACTOR * f_In ** 1.5),
-            METALS["In"]["mu_band"]
+            MU_IN_MAX
         )
 
         # ----------------------------------------------------------------

@@ -8,7 +8,7 @@
         "_calibration_method": "regional_additive (In-rich operating point)",
         "_calibration_n_points": 5,
         "_calibration_formula": "In-rich a-IGZO (champion cation In~0.6); anchored vs 1:1:1",
-        "_mean_bias_pct": -24.0,
+        "_mean_bias_pct": -8.0,
         "_uncertainty_pct": 28.0,
         "_sources": [
             "Nomura & Hosono et al. 2004 (Nature 432, 488) / 2010 (STAM 11 044305): 1:1:1 anchor, Hall mu ~10-16 cm2/Vs",
@@ -17,8 +17,8 @@
             "In-rich consensus: mu rises monotonically with In/(In+Ga) (In-5s overlap); ~40-50 cm2/Vs at cation In 0.45-0.6, spread ~+-20% (process-fixed)",
             "Tradeoff (Sci. Rep. 2024 s41598-024-81556-y): In-rich -> negative Vth, higher Ioff, worse NBIS; amorphous-stable window tops out ~cation In 0.5-0.7"
         ],
-        "_correction_note": "AUDIT/RELIABILITY follow-up 2026-06-03: L's +-40% was the stack's fab-failure bottleneck. A focused review of the In-rich REGION (where the champion sits, cation In~0.6) shows it is far better constrained than the full composition range: independent groups agree to ~+-20% (process-fixed), so +-40% was too pessimistic. Tightened to 28% (covers +-20% physics + deposition-method scatter). The model still UNDER-predicts In-rich mobility (~20 vs lit ~40-48) because the percolation/IIS penalties (audit-verified physics) are conservative at high In -- this under-estimate is SAFE (real device better than modelled) and is left as a documented limitation; a future model revision could steepen the In-coop / ease the In-rich percolation penalty rather than inflate the additive offset (which would overshoot low-In, the EM lesson).",
-        "_notes": "mobility offset 2.0 -> 4.0 (modest, stays conservative everywhere: 1:1:1 ~9.7 vs lit ~13; champion ~22 vs lit ~45 -- both still under-estimates, no overshoot). SS offset 20 (model interface-trap term carries the rest). crystallization_risk uncalibrated -> 0. Update with in-house Hall mobility + NBIS runs at the In-rich champion composition.",
+        "_correction_note": "Two-step calibration. (1) 2026-06-03: tightened uncertainty 40->28% for the In-rich region (better-constrained than the full range; ~+-20% across groups). (2) 2026-06-04 (PRESSURE-TEST follow-up): the model previously UNDER-predicted In-rich mobility ~2x (~20 vs lit ~40-48) — a self-inflicted ceiling. FIXED at the model (not the offset): EM-lesson — steepened the In-cooperative term (IN_COOP_FACTOR 0.5->3.3) and decoupled the In-rich band-mobility cap (60->110, In2O3-like) in L/api.py, so the model now reproduces BOTH anchors (1:1:1 ~13, In-rich ~42) and the right ~3.4x ratio. Residual bias now small (~-8%, was -24%); the +4 mobility offset is a small trim, not a band-aid over a structural gap.",
+        "_notes": "mobility offset +4.0 (small residual on the now-accurate model: 1:1:1 ~13, champion ~42 — both match lit). SS offset 20 (model interface-trap term carries the rest). crystallization_risk uncalibrated -> 0. Update with in-house Hall mobility + NBIS runs at the In-rich champion composition.",
         "offsets": {
             "mobility_cm2_Vs": 4.0,
             "SS_mV_dec": 20.0,
