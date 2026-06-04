@@ -62,6 +62,7 @@ material has been fabricated or measured. Read every number below as
 | M = composite | **partial** | EM d33 → locomotion, E endurance → cycle cap are wired; full E/PM coupling is first-pass |
 | `integration` (planar/encapsulated/nanostructured) | **lit-grounded, simplified** | the real endurance lever, but the model does **not** yet penalise its added FAB complexity/yield |
 | Champions | **stochastic** | single robust-search outputs; ±a few % run-to-run |
+| Thermal-budget co-integration (`tools/integration.py`) | **lit-grounded, estimates** | T_process for E/EM is the live champion anneal/dep temp; L/PM/M from literature. **T_survive values are materials-physics estimates, NOT in-house TGA/anneal-ladder data**; peak-temp only (no thermal-dose/expansion/interdiffusion). Result: only **2 of 120** build orders are viable (EM/E → L → PM → M); PM's ~250 °C ceiling pins it to the cold top |
 
 ## What the audit corrected (don't trust pre-2026-06-03 numbers)
 
@@ -79,4 +80,5 @@ and the fix commits.
 python3 tools/reliability.py --root . --model-risk   # fab-failure + endurance board
 python3 tools/stack_yield.py  --root . --model-risk   # composite stack yield
 python3 tools/loop_kernel_adapter.py --layer <L> --robust --model-risk --pareto
+python3 tools/integration.py   --root .                # thermal-budget fab-order feasibility
 ```

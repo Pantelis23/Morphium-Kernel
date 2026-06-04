@@ -78,6 +78,16 @@ python3 tools/loop_kernel_adapter.py --layer L --budget 100
 python3 tools/stress_test.py --layer EM
 ```
 
+### Check Monolithic-Integration Feasibility
+
+Can the five layers be co-fabricated into one stack, and in what order? The
+descending-thermal-budget model reports the viable fab sequences and the binding
+constraint (only **2 of 120** orderings survive; PM's ~250 °C ceiling pins it on top).
+
+```bash
+python3 tools/integration.py
+```
+
 ## Repository Structure
 
 ```text
@@ -91,6 +101,7 @@ python3 tools/stress_test.py --layer EM
 │   ├── multi_radix_sim.py
 │   ├── healing_sim.py
 │   ├── sensitivity_analysis.py
+│   ├── integration.py      # thermal-budget co-integration / fab-order feasibility
 │   └── stress_test.py
 ├── ledger/                # Immutable discovery history (append-only NDJSON)
 ├── artifacts/             # Blessed state — GOLDEN_IMAGE.json
