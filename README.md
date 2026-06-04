@@ -88,6 +88,16 @@ constraint (only **2 of 120** orderings survive; PM's ~250 °C ceiling pins it o
 python3 tools/integration.py
 ```
 
+### See What Devices the Stack Becomes
+
+Map the same stack onto a watch, phone, and desktop — derived capability and the
+binding wall for each (watch = battery, phone = thermal+clock, desktop = logic clock).
+Full write-up in [`docs/DEVICES.md`](docs/DEVICES.md).
+
+```bash
+python3 tools/devices.py
+```
+
 ## Repository Structure
 
 ```text
@@ -102,6 +112,7 @@ python3 tools/integration.py
 │   ├── healing_sim.py
 │   ├── sensitivity_analysis.py
 │   ├── integration.py      # thermal-budget co-integration / fab-order feasibility
+│   ├── devices.py          # per-device (watch/phone/desktop) capability envelopes
 │   └── stress_test.py
 ├── ledger/                # Immutable discovery history (append-only NDJSON)
 ├── artifacts/             # Blessed state — GOLDEN_IMAGE.json

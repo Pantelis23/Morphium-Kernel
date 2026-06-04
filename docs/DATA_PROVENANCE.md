@@ -63,6 +63,7 @@ material has been fabricated or measured. Read every number below as
 | `integration` (planar/encapsulated/nanostructured) | **lit-grounded, simplified** | the real endurance lever, but the model does **not** yet penalise its added FAB complexity/yield |
 | Champions | **stochastic** | single robust-search outputs; ±a few % run-to-run |
 | Thermal-budget co-integration (`tools/integration.py`) | **lit-grounded, estimates** | T_process for E/EM is the live champion anneal/dep temp; L/PM/M from literature. **T_survive values are materials-physics estimates, NOT in-house TGA/anneal-ladder data**; peak-temp only (no thermal-dose/expansion/interdiffusion). Result: only **2 of 120** build orders are viable (EM/E → L → PM → M); PM's ~250 °C ceiling pins it to the cold top |
+| Device envelopes (`tools/devices.py`, `docs/DEVICES.md`) | **mixed** | memory capacity & thermal budgets are first-principles (firm); **logic throughput is soft** — IGZO clock assumed 0.3 GHz (lit 0.1–1) so the ~13× Si gap is the honest "not a scalar CPU" caveat; foglet counts are granularity-floor maxima. Order-of-magnitude product envelopes |
 
 ## What the audit corrected (don't trust pre-2026-06-03 numbers)
 
@@ -81,4 +82,5 @@ python3 tools/reliability.py --root . --model-risk   # fab-failure + endurance b
 python3 tools/stack_yield.py  --root . --model-risk   # composite stack yield
 python3 tools/loop_kernel_adapter.py --layer <L> --robust --model-risk --pareto
 python3 tools/integration.py   --root .                # thermal-budget fab-order feasibility
+python3 tools/devices.py       --root .                # per-device capability envelopes
 ```
