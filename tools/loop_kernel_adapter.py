@@ -220,7 +220,9 @@ def generate_random_state_E():
     # Model shows Pr still ~18 µC/cm² at 540°C; 583°C champion has <5°C furnace margin.
     anneal    = round(random.uniform(350.0, 560.0), 0)
 
-    return {"formula": formula, "thickness_nm": thickness, "anneal_temp_C": anneal}
+    # Electrode is the dominant endurance lever (Ru >> TiN); search can pick it.
+    return {"formula": formula, "thickness_nm": thickness, "anneal_temp_C": anneal,
+            "electrode": random.choice(["TiN", "W", "TaN", "Mo", "Ru"])}
 
 
 def generate_random_state_EM():
@@ -354,6 +356,8 @@ def mutate_E(state, step=0.05):
         T = new_state.get("anneal_temp_C", 450.0)
         new_state["anneal_temp_C"] = round(min(max(T + random.gauss(0, 30.0), 350.0), 560.0), 0)
 
+    if random.random() < 0.15:   # occasionally switch electrode (endurance lever)
+        new_state["electrode"] = random.choice(["TiN", "W", "TaN", "Mo", "Ru"])
     return new_state
 
 

@@ -281,7 +281,17 @@ class MorphiumSimulatorE:
         # ----------------------------------------------------------------
         # 6.  Endurance
         # ----------------------------------------------------------------
-        endurance = ENDURANCE_MAX * (f_ortho ** 2) * ((E_g / E_G_HFO2) ** 3)
+        # ELECTRODE is the dominant real endurance factor (added 2026-06-04,
+        # pressure-test follow-up): inert/oxygen-scavenging-resistant electrodes
+        # cut interface oxidation + charge trapping. Ru/HZO/Ru reaches >1.2e11
+        # vs ~1e10 for plain TiN (literature). The orthorhombic-purity / bandgap
+        # terms set the intrinsic ceiling; the electrode multiplier scales it.
+        # Calibrated to the literature span (intrinsic base ~4.8e10 at good
+        # ortho): TiN -> ~1e10, Ru -> ~1.2e11 (Ru/HZO/Ru record). Ru/Mo cost
+        # more + are harder to BEOL-integrate (real tradeoff, not free).
+        _ELECTRODE_ENDUR = {"TiN": 0.2, "W": 0.35, "TaN": 0.3, "Mo": 0.9, "Ru": 2.5}
+        e_factor = _ELECTRODE_ENDUR.get(state.get("electrode", "TiN"), 0.2)
+        endurance = ENDURANCE_MAX * (f_ortho ** 2) * ((E_g / E_G_HFO2) ** 3) * e_factor
         endurance = max(endurance, 1.0)
 
         # ----------------------------------------------------------------

@@ -71,6 +71,7 @@ CHAMPIONS = {
         "formula": "Hf0.4Zr0.557Al0.043O2",
         "thickness_nm": 11.7,
         "anneal_temp_C": 559.0,
+        "electrode": "Ru",   # high-endurance electrode (write-grade); cost tradeoff noted
         "seed": 42
     },
     "EM": {
@@ -130,7 +131,7 @@ PROMOTION_THRESHOLDS = {
     "E": {
         "polarization_uC_cm2": ("ge", 10.0),
         "dielectric_constant_k": ("ge", 15.0),
-        "endurance_cycles": ("ge", 1e9),
+        "endurance_cycles": ("ge", 5e10),   # write-grade -> drives the search to a Ru/Mo electrode
     },
     "EM": {
         "d33_pC_N":        ("ge", 10.0),
@@ -475,7 +476,8 @@ def run_monte_carlo(kc, layer, state, n_samples=1000, sigma_scale=1.0,
             new_formula = f"Hf{x_Hf_new}Zr{round(x_Zr_new, 3)}O2"
             t_new  = max(state.get("thickness_nm", 10.0) + random.gauss(0, sigmas.get("thickness_nm", 0.5) * sigma_scale), 1.0)
             T_new  = state.get("anneal_temp_C", 450.0) + random.gauss(0, sigmas.get("anneal_temp_C", 10.0) * sigma_scale)
-            s = {"formula": new_formula, "thickness_nm": t_new, "anneal_temp_C": T_new, "seed": seed}
+            s = {"formula": new_formula, "thickness_nm": t_new, "anneal_temp_C": T_new,
+                 "electrode": state.get("electrode", "TiN"), "seed": seed}
 
         elif layer == "EM":
             import re
