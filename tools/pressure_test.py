@@ -38,7 +38,7 @@ F_NODE_NM = 10.0       # assumed feature size for density
 IGZO_IOFF_REAL = 1e-19 # real a-IGZO off-current ~1e-19-1e-22 A (model floors at ~1e-13)
 LAMBDA_NM = 1550.0     # PM operating wavelength
 H_CONV = 25.0          # W/m^2/K natural+slight-forced convection (phone-class)
-DT_MAX = 40.0          # K allowed surface rise (skin-safe)
+DT_MAX = 40.0          # K case-surface rise above ambient (non-skin-contact; skin-worn wants ~15-25 K)
 
 
 def _hdr(title):
@@ -142,11 +142,16 @@ def pressure_system(em_force_mN):
         vol_cm3 = (4/3)*3.14159*r_cm**3
         pdens = P_max / max(vol_cm3, 1e-9)               # W/cm^3
         print(f"  {name:16}: sheds {P_max*1e3:8.1f} mW total  -> {pdens*1e3:7.2f} mW/cm3 budget")
-    print(f"  (h={H_CONV} W/m2K passive, dT={DT_MAX}K skin-safe.)")
+    print(f"  (h={H_CONV} W/m2K passive [optimistic; still-air ~5-10], dT={DT_MAX}K case-rise.)")
     print(f"  >> THE WALL: an object dissipates in its VOLUME but cools through its SURFACE")
     print(f"     (P_cool ~ r^2, P_gen ~ r^3) -> power density falls as 1/r. A watch can run")
     print(f"     ~mW/cm3; a phone less; an umbrella-sized compute brick would COOK itself.")
     print(f"     => 'be anything' is bounded by heat: small+cool or large+passive, not both.")
+    print(f"  NOTE: this models each object as a SPHERE (worst-case 'folded into a blob') to")
+    print(f"     expose the 1/r wall. Real Morphium devices are thin face-cooled SLABS that")
+    print(f"     escape it (budget ~1/thickness) -> see tools/devices.py / docs/DEVICES.md, where")
+    print(f"     the same phone is ~292 mW/cm3 (slab) vs {12.0:.0f}-86 mW/cm3 here (sphere). Not a")
+    print(f"     contradiction: slab = the device, sphere = the pathological fold.")
     # foglet count + reconfig budget for a phone-sized object
     fog_um = 100.0
     fog_vol = (fog_um*1e-4)**3                            # cm^3

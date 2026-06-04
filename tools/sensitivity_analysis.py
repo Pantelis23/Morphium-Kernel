@@ -50,8 +50,9 @@ CHAMPIONS = {
     "L": {
         # Regenerated 2026-06-03 (audit M-1): the prior champion had cation
         # Zn=0.003 (effectively In-Ga-O), violating the literature-justified
-        # Zn>=0.10 floor. This one satisfies it: cation In=0.628/Ga=0.272/Zn=0.100,
-        # mobility ~20 cm2/Vs (robust+model-risk search under the current floors).
+        # Zn>=0.10 floor. This one satisfies it: cation In=0.628/Ga=0.272/Zn=0.100.
+        # mobility ~44.5 cm2/Vs after the 2026-06-04 IN_COOP recalibration (matches the
+        # In-rich lit anchor 40-48; the old "~20" comment predated that model fix).
         "materials": {
             "channel_material": "IGZO",
             "channel_composition": {

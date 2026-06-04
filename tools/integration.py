@@ -59,10 +59,12 @@ LAYERS = {
     "EM": {
         "name": "ScAlN piezo actuation",
         "T_process": EM_DEP,
-        "T_survive": 800.0, "conf": "firm",
+        "T_survive": 650.0, "conf": "est",
         "proc_src": "dep_temp_C from champion EM (reactive-sputter texture sigmoid; >450 C raises ScN 2nd phase)",
-        "surv_src": "Wurtzite Sc(Al)N is refractory; AlN stable >1000 C, ScAlN decomposition / rocksalt onset "
-                    ">~800-900 C (Fichtner 2019; Casamento 2022). 800 C conservative.",
+        "surv_src": "AUDIT 2026-06-04: 800 C only applies to low-Sc (~10%) AlN; the device champion is "
+                    "high-Sc (x~0.38), where the wurtzite->rocksalt instability lowers the survival ceiling "
+                    "to ~550-650 C (Fichtner 2019; Casamento 2022). 650 C (est). EM is never the binding "
+                    "layer, so the ordering conclusion is unaffected.",
     },
     "L": {
         "name": "IGZO oxide TFT logic",

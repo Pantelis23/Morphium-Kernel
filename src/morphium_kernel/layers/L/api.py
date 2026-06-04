@@ -82,7 +82,7 @@ Physics Models Implemented:
 Model calibration-reference device (seed 42) — a real ~1:1:1-ish IGZO point
 the mobility model is anchored to (NOT the recommended champion: its cation
 Zn=0.051 is below the Zn>=0.10 floor; see CHAMPIONS for the floor-compliant
-champion, In-rich, μ≈20):
+champion, In-rich, μ≈44.5 after the 2026-06-04 IN_COOP recalibration):
   Composition: In=0.262, Ga=0.244, Zn=0.027, O=0.467  (normalised)
   Expected: μ ≈ 13 cm²/Vs, I_off ≈ 4e-12 A, SS ≈ 77 mV/dec
 
