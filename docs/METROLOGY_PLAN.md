@@ -1,6 +1,12 @@
 # Morphium Metrology Plan (v1.0)
 **Objective:** Validate simulation champions with physical measurements.
 
+> ⚠️ **The predicted target numbers in this v1.0 plan are STALE** (they predate the
+> 2026-06 calibration/audit work — e.g. PM Δn is ~0.765, not >1.0; L µ is ~44.5, not 30).
+> The **live source of truth for every predicted metric + its falsification band** is
+> `tools/testchip.py` (`python3 tools/testchip.py`). The measurement methods/instruments
+> below remain valid; only the target values are superseded. See `docs/STATE_OF_MORPHIUM.md`.
+
 ## Layer L (Oxide Logic)
 **Target:** IGZO TFT with $\mu > 15$ cm²/V·s.
 
@@ -41,7 +47,7 @@
 ---
 
 ## Layer PM (Photonics)
-**Target:** $\Delta n > 1.0$ at 1550nm.
+**Target:** $\Delta n \approx 0.765$ at 1550nm (pure-Sb₂Se₃ anchor; see `testchip.py` for the live band).
 
 ### 1. Ellipsometry
 *   **Instrument:** Woollam Ellipsometer.

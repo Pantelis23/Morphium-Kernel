@@ -1,6 +1,11 @@
 # Morphium Fabrication Plan (v1.0)
 **Objective:** Validate the **Multi-Radix Logic (MRL)** and **Modular Mechanics** using de-risked materials.
 
+> ⚠️ **v1.0 — champion recipes/targets below are STALE** (predate 2026-06 calibration).
+> For current champion recipes, process temps, predicted metrics + falsification bands,
+> use `tools/testchip.py` and the co-integration order in `tools/integration.py`. The
+> process/stack engineering here is still useful. See `docs/STATE_OF_MORPHIUM.md`.
+
 ---
 
 ## 1. Demo A: Morphium-L (MRL Logic Transistor)
@@ -8,8 +13,8 @@
 **Requirement:** High Linearity, Low Hysteresis (Drift < 0.05V).
 
 ### 1.1 Material Strategy (Risk Reduced)
-*   **Champion (High Performance):** `IGZO` (In-Rich: 60% In). $\mu \approx 30$.
-*   **Safe Mode (High Stability):** `IGZO` (Balanced: 1:1:1). $\mu \approx 10$.
+*   **Champion (High Performance):** `IGZO` (In-rich, cation In~0.63). $\mu \approx 44.5$ (live: `testchip.py --layer L`).
+*   **Safe Mode (High Stability):** `IGZO` (Balanced: 1:1:1). $\mu \approx 13$.
     *   *Note:* Start with Safe Mode to verify the mask set.
 
 ### 1.2 Material Stack

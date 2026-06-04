@@ -85,4 +85,5 @@ python3 tools/stack_yield.py  --root . --model-risk   # composite stack yield
 python3 tools/loop_kernel_adapter.py --layer <L> --robust --model-risk --pareto
 python3 tools/integration.py   --root .                # thermal-budget fab-order feasibility
 python3 tools/devices.py       --root .                # per-device capability envelopes
+python3 tools/testchip.py      --root .                # falsifiable single-layer test-chip specs
 ```

@@ -100,6 +100,18 @@ Full write-up in [`docs/DEVICES.md`](docs/DEVICES.md).
 python3 tools/devices.py
 ```
 
+### Get the Falsifiable Test-Chip Specs
+
+Turn each champion into a single-layer test chip the simulation **commits to
+predicting** — recipe, process temp, predicted metrics with ± bands, metrology
+method, and the falsification criterion. This is the bridge to silicon (step 1 of
+[`docs/STATE_OF_MORPHIUM.md`](docs/STATE_OF_MORPHIUM.md)).
+
+```bash
+python3 tools/testchip.py            # all layers
+python3 tools/testchip.py --layer E  # one layer
+```
+
 ## Repository Structure
 
 ```text
@@ -115,6 +127,7 @@ python3 tools/devices.py
 │   ├── sensitivity_analysis.py
 │   ├── integration.py      # thermal-budget co-integration / fab-order feasibility
 │   ├── devices.py          # per-device (watch/phone/desktop) capability envelopes
+│   ├── testchip.py         # single-layer falsifiable test-chip specs (predicted metric + band)
 │   └── stress_test.py
 ├── ledger/                # Immutable discovery history (append-only NDJSON)
 ├── artifacts/             # Blessed state — GOLDEN_IMAGE.json
