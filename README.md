@@ -29,6 +29,8 @@
 
 > Every champion in `artifacts/GOLDEN_IMAGE.json` is reproducible from `ledger/recipes.ndjson` via `tools/gatekeeper.py`. Champions are GA/Monte-Carlo *search* outputs — not hand-picked — but the underlying physics models are **calibrated to published literature** (the calibration constants in `config/phi.json` are literature-anchored). The gatekeeper guarantees *reproducibility and threshold-compliance in simulation*, **not** physical correctness. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
 
+> 📋 **Start here:** [`docs/STATE_OF_MORPHIUM.md`](docs/STATE_OF_MORPHIUM.md) — the capstone synthesis: what's real, what's speculative, the system-level walls, the device verdicts, and what it would take to build the first one. Backed by two adversarial audit rounds ([materials](docs/AUDIT_2026-06-03.md), [system/device](docs/AUDIT_2026-06-04.md)).
+
 ## The Stack
 
 | Layer  | Function          | Material                  | Key Metric (simulation, lit-calibrated) |
